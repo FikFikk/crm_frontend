@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import { useSocket } from './composables/useSocket'
 import { useNotification } from './composables/useNotification'
-import '../src/assets/dist/css/app.css'
+// import '../src/assets/dist/css/app.css' 
 
 const router = useRouter()
 const { onSocket } = useSocket()

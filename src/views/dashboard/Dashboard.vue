@@ -82,8 +82,31 @@
           </div>
           <!-- END: General Report -->
           
+          <div class="col-span-12 lg:col-span-12 mt-8">
+            <div class="row-start-2 md:row-start-auto col-span-12 md:col-span-4 py-6 border-black border-opacity-10 border-t md:border-t-0 md:border-l md:border-r border-dashed px-10 sm:px-28 md:px-5 -mx-5">
+                <div class="flex flex-wrap items-center">
+                    <div class="flex items-center w-full sm:w-auto justify-center sm:justify-start mr-auto mb-5 2xl:mb-0">
+                        <div class="w-2 h-2 bg-primary rounded-full -mt-4"></div>
+                        <div class="ml-3.5">
+                            <div class="relative text-xl 2xl:text-2xl font-medium leading-6 2xl:leading-5 pl-3.5 2xl:pl-4"> <span class="absolute text-base 2xl:text-xl top-0 left-0 2xl:-mt-1.5">$</span> 47,578.77 </div>
+                            <div class="text-slate-500 mt-2">Yearly budget</div>
+                        </div>
+                    </div>
+                    <select class="form-select bg-transparent border-black border-opacity-10 dark:border-darkmode-400 dark:bg-transparent mx-auto sm:mx-0 py-1.5 px-3 w-auto -mt-2">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">Weekly</option>
+                        <option value="monthly">Monthly</option>
+                        <option value="yearly">Yearly</option>
+                        <option value="custom-date">Custom Date</option>
+                    </select>
+                </div>
+                <div class="mt-10 text-slate-600 dark:text-slate-300">You have spent about 35% of your annual budget.</div>
+                <canvas class="mt-6" id="report-bar-chart-1" height="267"></canvas>
+            </div>
+          </div>
+
           <!-- BEGIN: Sales Report -->
-          <div class="col-span-12 lg:col-span-6 mt-8">
+          <!-- <div class="col-span-12 lg:col-span-6 mt-8">
             <div class="intro-y block sm:flex items-center h-10">
               <h2 class="text-lg font-medium truncate mr-5">
                 Sales Report
@@ -125,11 +148,11 @@
                 <canvas id="report-line-chart" height="169" class="mt-6"></canvas>
               </div>
             </div>
-          </div>
+          </div> -->
           <!-- END: Sales Report -->
           
           <!-- BEGIN: Weekly Top Seller -->
-          <div class="col-span-12 sm:col-span-6 lg:col-span-3 mt-8">
+          <!-- <div class="col-span-12 sm:col-span-6 lg:col-span-3 mt-8">
             <div class="intro-y flex items-center h-10">
               <h2 class="text-lg font-medium truncate mr-5">
                 Weekly Top Seller
@@ -153,11 +176,11 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
           <!-- END: Weekly Top Seller -->
           
           <!-- BEGIN: Sales Report -->
-          <div class="col-span-12 sm:col-span-6 lg:col-span-3 mt-8">
+          <!-- <div class="col-span-12 sm:col-span-6 lg:col-span-3 mt-8">
             <div class="intro-y flex items-center h-10">
               <h2 class="text-lg font-medium truncate mr-5">
                 Sales Report
@@ -181,7 +204,7 @@
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
           <!-- END: Sales Report -->
           
           <!-- BEGIN: Official Store -->
