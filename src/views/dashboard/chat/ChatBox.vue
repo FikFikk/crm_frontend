@@ -190,7 +190,7 @@
                           {{ msg.body }}
                         </div>
                         
-                        <div class="mt-1 flex items-center justify-between">
+                        <div class="mt-1 flex flex-col items-start" :class="msg.direction === 'out' ? 'items-end' : 'items-start'">
                           <div class="flex items-center gap-1">
                             <div class="text-xs" :class="msg.direction === 'in' ? 'text-slate-500' : 'text-white/70'">{{ formatTime(msg.created) }}</div>
                             <!-- Message Status Icon (only for outgoing messages) -->
@@ -200,8 +200,8 @@
                               class="opacity-70"
                             />
                           </div>
-                          <!-- Show agent name only for outgoing messages (from agent) -->
-                          <div v-if="msg.direction === 'out' && msg.agent && msg.agent.role === 'anggota'" class="text-xs font-medium ml-2 text-white/70">
+                          <!-- Show agent name under outgoing messages (from agent, except Pimpinan) -->
+                          <div v-if="msg.direction === 'out' && msg.agent && msg.agent.name && msg.agent.role !== 'pimpinan'" class="text-xs font-medium mt-1 text-white/70">
                             {{ msg.agent.name }}
                           </div>
                         </div>
