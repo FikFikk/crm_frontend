@@ -189,24 +189,76 @@ onMounted(() => {
   loadConversations();
   // Listen for real-time updates
   onSocket('message_received', (response: any) => {
-    // If the message is for an existing conversation, update last message
     if (response && response.chat && response.customer) {
-      // Try to find conversation by customer phone or id
-      // If you have conversationId in response, use it. Otherwise, fallback to reload all.
-      if (response.chat.conversationId) {
-        updateConversationLastMessage(response.chat.conversationId, response.chat.body);
-      } else {
-        // Fallback: reload all conversations
-        loadConversations();
+      const convId = response.chat.conversationId;
+      if (convId) {
+        const idx = conversations.value.findIndex(conv => conv.conversationId === convId);
+        if (idx !== -1) {
+          conversations.value[idx].lastMessage = {
+            id: response.chat.id || Date.now(),
+            messageId: response.chat.messageId || `msg_${Date.now()}`,
+            body: response.chat.body,
+            direction: response.chat.direction || 'incoming',
+            created: response.chat.created || new Date().toISOString(),
+            byAgent: response.chat.byAgent
+          };
+          conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
+        } else {
+          // Tambahkan percakapan baru ke list jika belum ada, pastikan semua properti Conversation terisi
+          conversations.value.unshift({
+            conversationId: convId,
+            customerId: response.customer?.id || 0,
+            customer: response.customer || { id: 0, name: '', phone: '' },
+            involvedAgents: response.involvedAgents || [],
+            primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
+            lastMessage: {
+              id: response.chat.id || Date.now(),
+              messageId: response.chat.messageId || `msg_${Date.now()}`,
+              body: response.chat.body,
+              direction: response.chat.direction || 'incoming',
+              created: response.chat.created || new Date().toISOString(),
+              byAgent: response.chat.byAgent
+            },
+            totalMessages: 1
+          });
+        }
       }
     }
   });
   onSocket('message_sent', (response: any) => {
     if (response && response.chat && response.customer) {
-      if (response.chat.conversationId) {
-        updateConversationLastMessage(response.chat.conversationId, response.chat.body);
-      } else {
-        loadConversations();
+      const convId = response.chat.conversationId;
+      if (convId) {
+        const idx = conversations.value.findIndex(conv => conv.conversationId === convId);
+        if (idx !== -1) {
+          conversations.value[idx].lastMessage = {
+            id: response.chat.id || Date.now(),
+            messageId: response.chat.messageId || `msg_${Date.now()}`,
+            body: response.chat.body,
+            direction: response.chat.direction || 'outgoing',
+            created: response.chat.created || new Date().toISOString(),
+            byAgent: response.chat.byAgent
+          };
+          conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
+        } else {
+          // Tambahkan percakapan baru ke list jika belum ada, pastikan semua properti Conversation terisi
+          conversations.value.unshift({
+            conversationId: convId,
+            customerId: response.customer?.id || 0,
+            customer: response.customer || { id: 0, name: '', phone: '' },
+            involvedAgents: response.involvedAgents || [],
+            primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
+            lastMessage: {
+              id: response.chat.id || Date.now(),
+              messageId: response.chat.messageId || `msg_${Date.now()}`,
+              body: response.chat.body,
+              direction: response.chat.direction || 'outgoing',
+              created: response.chat.created || new Date().toISOString(),
+              byAgent: response.chat.byAgent
+            },
+            totalMessages: 1
+          });
+        }
       }
     }
   });
