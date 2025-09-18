@@ -39,14 +39,23 @@
                         <img alt="Profile" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
                         <div class="w-3 h-3 bg-success absolute right-0 bottom-0 rounded-full border-2 border-white dark:border-darkmode-600"></div>
                       </div>
-                      <div class="ml-2 overflow-hidden">
-                        <div class="flex items-center">
-                          <a href="javascript:;" class="font-medium mr-1">{{ conv.customer.name }}</a>
-                          <div class="text-xs text-slate-400 ml-auto">{{ formatTime(conv.lastMessage.created) }}</div>
+                      <div class="ml-2 overflow-hidden flex-1">
+                        <div class="flex items-center justify-between">
+                          <a href="javascript:;" class="font-medium truncate">{{ conv.customer.name }}</a>
+                          <div class="text-xs text-slate-400 ml-2 flex-shrink-0">{{ formatTime(conv.lastMessage.created) }}</div>
                         </div>
-                        <div class="w-full truncate text-slate-500 mt-0.5">{{ conv.lastMessage.body }}</div>
+                        <div class="flex items-center gap-1 w-full mt-0.5">
+                          <div class="truncate text-slate-500 text-sm flex-1">{{ conv.lastMessage.body }}</div>
+                          <!-- Show status icon only for outgoing messages -->
+                          <MessageStatusIcon 
+                            v-if="conv.lastMessage.direction === 'outgoing'" 
+                            :status="getMessageStatus(conv.lastMessage.messageId) || 'sent'"
+                            class="flex-shrink-0 opacity-70"
+                          />
+                        </div>
                       </div>
-                      <div v-if="conv.totalMessages > 1" class="w-5 h-5 flex items-center justify-center absolute top-0 right-0 text-xs text-white rounded-full bg-primary font-medium -mt-1 -mr-1">{{ conv.totalMessages }}</div>
+                      <!-- KASUS 2: Show unread count badge instead of total messages -->
+                      <div v-if="getUnreadCount(conv.conversationId) > 0" class="w-5 h-5 flex items-center justify-center absolute top-0 right-0 text-xs text-white rounded-full bg-primary font-medium -mt-1 -mr-1">{{ getUnreadCount(conv.conversationId) }}</div>
                     </div>
                   </template>
                 </div>
@@ -62,14 +71,18 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { chatService, type Conversation } from '../../../services/chat-service';
 import { useSocket } from '../../../composables/useSocket';
+import { useMessageStatus } from '../../../composables/useMessageStatus';
+import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
 
 const { onSocket } = useSocket();
+const { getMessageStatus } = useMessageStatus();
 
 const props = defineProps<{ selectedConversationId?: number | null }>();
 const conversations = ref<Conversation[]>([]);
 const loading = ref(false);
 const error = ref<string | null>(null);
 const search = ref('');
+const unreadCounts = ref<Map<number, number>>(new Map()); // Track unread messages per conversation
 
 const emit = defineEmits<{
   select: [conversationId: number]
@@ -125,10 +138,37 @@ const updateConversationLastMessage = (conversationId: number, messageText: stri
   }
 };
 
+// KASUS 2: Functions untuk menangani unread count
+const normalizeId = (id: number | string | undefined | null): number | null => {
+  if (id === undefined || id === null) return null;
+  const n = Number(id);
+  return Number.isNaN(n) ? null : n;
+};
+
+const markConversationAsRead = (conversationId: number | string) => {
+  const id = normalizeId(conversationId);
+  if (id === null) return;
+  unreadCounts.value.set(id, 0);
+};
+
+const incrementUnreadCount = (conversationId: number | string) => {
+  const id = normalizeId(conversationId);
+  if (id === null) return;
+  const currentCount = unreadCounts.value.get(id) || 0;
+  unreadCounts.value.set(id, currentCount + 1);
+};
+
+const getUnreadCount = (conversationId: number | string): number => {
+  const id = normalizeId(conversationId);
+  if (id === null) return 0;
+  return unreadCounts.value.get(id) || 0;
+};
+
 // Expose functions to parent component
 defineExpose({
   loadConversations,
-  updateConversationLastMessage
+  updateConversationLastMessage,
+  markConversationAsRead
 });
 
 const filteredConversations = computed(() => {
@@ -178,11 +218,20 @@ function formatTime(dateStr: string) {
 
 function handleSelect(conversationId: number) {
   console.log('[ChatList] emit select:', conversationId);
+  // KASUS 2: Mark conversation as read ketika diklik
+  markConversationAsRead(conversationId);
   emit('select', conversationId);
 }
 
+// Clear unread when parent selects a conversation (ensure numeric comparison)
 watch(() => props.selectedConversationId, (val) => {
-  console.log('[ChatList] selectedConversationId prop changed:', val);
+  // If a conversation is selected, mark it as read locally
+  if (val !== undefined && val !== null) {
+    const convId = Number(val);
+    if (!Number.isNaN(convId)) {
+      markConversationAsRead(convId);
+    }
+  }
 });
 
 onMounted(() => {
@@ -190,37 +239,52 @@ onMounted(() => {
   // Listen for real-time updates
   onSocket('message_received', (response: any) => {
     if (response && response.chat && response.customer) {
-      const convId = response.chat.conversationId;
-      if (convId) {
-        const idx = conversations.value.findIndex(conv => conv.conversationId === convId);
-        if (idx !== -1) {
-          conversations.value[idx].lastMessage = {
+      // Normalize conversation id to number to avoid type mismatches
+      const rawId = response.chat.conversationId ?? response.chat.conversation_id ?? response.chat.convId;
+      const convId = Number(rawId);
+      if (Number.isNaN(convId)) return;
+
+      const isIncoming = (response.chat.direction === 'in' || response.chat.direction === 'incoming' || !response.chat.direction);
+
+      const idx = conversations.value.findIndex(conv => Number(conv.conversationId) === convId);
+      if (idx !== -1) {
+        conversations.value[idx].lastMessage = {
+          id: response.chat.id || Date.now(),
+          messageId: response.chat.messageId || `msg_${Date.now()}`,
+          body: response.chat.body,
+          direction: response.chat.direction || 'incoming',
+          created: response.chat.created || new Date().toISOString(),
+          byAgent: response.chat.byAgent
+        };
+        conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
+
+        // Increment unread only for incoming messages and only if the conversation isn't selected
+        if (isIncoming && Number(props.selectedConversationId) !== convId) {
+          incrementUnreadCount(convId);
+          console.log(`[ChatList] Increment unread untuk conversation ${convId}, count: ${getUnreadCount(convId)}`);
+        }
+      } else {
+        // Add new conversation to list; normalize conversationId to number
+        conversations.value.unshift({
+          conversationId: convId,
+          customerId: response.customer?.id || 0,
+          customer: response.customer || { id: 0, name: '', phone: '' },
+          involvedAgents: response.involvedAgents || [],
+          primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
+          lastMessage: {
             id: response.chat.id || Date.now(),
             messageId: response.chat.messageId || `msg_${Date.now()}`,
             body: response.chat.body,
             direction: response.chat.direction || 'incoming',
             created: response.chat.created || new Date().toISOString(),
             byAgent: response.chat.byAgent
-          };
-          conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
-        } else {
-          // Tambahkan percakapan baru ke list jika belum ada, pastikan semua properti Conversation terisi
-          conversations.value.unshift({
-            conversationId: convId,
-            customerId: response.customer?.id || 0,
-            customer: response.customer || { id: 0, name: '', phone: '' },
-            involvedAgents: response.involvedAgents || [],
-            primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
-            lastMessage: {
-              id: response.chat.id || Date.now(),
-              messageId: response.chat.messageId || `msg_${Date.now()}`,
-              body: response.chat.body,
-              direction: response.chat.direction || 'incoming',
-              created: response.chat.created || new Date().toISOString(),
-              byAgent: response.chat.byAgent
-            },
-            totalMessages: 1
-          });
+          },
+          totalMessages: 1
+        });
+
+        // If incoming and not selected, initialize unread count
+        if (isIncoming && Number(props.selectedConversationId) !== convId) {
+          incrementUnreadCount(convId);
         }
       }
     }

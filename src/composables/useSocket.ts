@@ -74,6 +74,25 @@ function useSocket() {
       });
     });
   }
+  
+  // Setup default message status listeners if socket is connected
+  if (socketInstance.value) {
+    // Listen for message delivery status from WhatsApp webhook
+    socketInstance.value.on('message_delivery_status', (data: any) => {
+      console.log('[Socket] Message delivery status:', data);
+    });
+    
+    // Listen for message read receipts from WhatsApp webhook  
+    socketInstance.value.on('message_read_receipt', (data: any) => {
+      console.log('[Socket] Message read receipt:', data);
+    });
+    
+    // Listen for message send confirmations
+    socketInstance.value.on('message_send_confirmation', (data: any) => {
+      console.log('[Socket] Message send confirmation:', data);
+    });
+  }
+  
   return {
     socket: socketInstance,
     waConnectionStatus,

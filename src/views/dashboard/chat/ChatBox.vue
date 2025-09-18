@@ -35,15 +35,13 @@
                     <input v-if="showSearch" v-model="searchMessage" @input="onSearchMessage" type="text" class="form-control w-40 h-8 text-xs" placeholder="Cari pesan..." autofocus style="transition:width 0.2s;" />
                   </transition>
                   <!-- Add/Manage Agent Button (only for pimpinan) -->
-                  <!-- <button v-if="currentUser && currentUser.role === 'pimpinan'" @click="showAddAgentModal = true" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-700" title="Tambah/Atur Agent"> -->
-                  <button v-if="currentUser" @click="showAddAgentModal = true" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-700" title="Tambah/Atur Agent">
+                  <button v-if="currentUser && currentUser.role === 'Pimpinan'" @click="showAddAgentModal = true" class="w-8 h-8 flex items-center justify-center text-slate-500 hover:text-slate-700" title="Tambah/Atur Agent">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
                     </svg>
                   </button>
-                  <!-- Agent Management Modal (only for pimpinan) -->
-                  <!-- <div v-if="showAddAgentModal && currentUser && currentUser.role === 'pimpinan'" class="absolute left-0 bottom-0 z-50 m-4 w-full max-w-xs sm:max-w-md"> -->
-                  <div v-if="showAddAgentModal && currentUser" class="absolute left-0 bottom-0 z-50 m-4 w-full max-w-xs sm:max-w-md">
+                  <!-- Agent Management Modal (only for Pimpinan) -->
+                  <div v-if="showAddAgentModal && currentUser && currentUser.role === 'Pimpinan'" class="absolute left-0 bottom-0 z-50 m-4 w-full max-w-xs sm:max-w-md">
                     <div class="bg-white dark:bg-darkmode-600 rounded-xl shadow-2xl w-full p-6 relative border border-slate-200 dark:border-darkmode-400 flex flex-col max-h-[80vh] overflow-y-auto">
                         <button class="absolute top-0 right-0 z-20 p-3 text-slate-400 hover:text-slate-700 focus:outline-none" @click="showAddAgentModal = false" title="Tutup">
                           <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
@@ -193,7 +191,15 @@
                         </div>
                         
                         <div class="mt-1 flex items-center justify-between">
-                          <div class="text-xs" :class="msg.direction === 'in' ? 'text-slate-500' : 'text-white/70'">{{ formatTime(msg.created) }}</div>
+                          <div class="flex items-center gap-1">
+                            <div class="text-xs" :class="msg.direction === 'in' ? 'text-slate-500' : 'text-white/70'">{{ formatTime(msg.created) }}</div>
+                            <!-- Message Status Icon (only for outgoing messages) -->
+                            <MessageStatusIcon 
+                              v-if="msg.direction === 'out'" 
+                              :status="msg.status || 'sent'"
+                              class="opacity-70"
+                            />
+                          </div>
                           <!-- Show agent name only for outgoing messages (from agent) -->
                           <div v-if="msg.direction === 'out' && msg.agent && msg.agent.role === 'anggota'" class="text-xs font-medium ml-2 text-white/70">
                             {{ msg.agent.name }}
@@ -271,12 +277,23 @@
 
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted } from 'vue';
-import { chatService, type ConversationDetail } from '../../../services/chat-service';
+import { chatService, type ConversationDetail, type ChatMessage } from '../../../services/chat-service';
 import { whatsappService } from '../../../services/whatsapp-service';
 import ChatEmojis from './ChatEmojis.vue';
+import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
 import { useSocket } from '../../../composables/useSocket';
+import { useMessageStatus } from '../../../composables/useMessageStatus';
 
 const { onSocket } = useSocket();
+const { 
+  markMessageSending, 
+  markMessageSent, 
+  markMessageDelivered, 
+  markMessageRead,
+  markMessageFailed,
+  enrichMessagesWithStatus,
+  setupStatusListeners
+} = useMessageStatus();
 
 // Ambil currentUser dari localStorage (auth context)
 const currentUser = ref<{ role: string } | null>(null);
@@ -301,11 +318,16 @@ function onSearchMessage() {}
 
 const props = defineProps<{ conversationId: number | null }>();
 const emit = defineEmits<{
-  'message-sent': [messageData: { message: string, conversationId: number }]
+  'message-sent': [messageData: { message: string, conversationId: number }],
+  'opened': [conversationId: number]
 }>();
 const loading = ref(false);
 const error = ref<string | null>(null);
 const conversation = ref<ConversationDetail | null>(null);
+// Tipe pesan pending (extend dari ChatMessage, tambahkan status?)
+type PendingMessage = ChatMessage & { status?: string };
+// Pending messages yang belum muncul di backend
+const pendingMessages = ref<PendingMessage[]>([]);
 const messageText = ref('');
 const messageInput = ref<HTMLTextAreaElement | null>(null);
 const messagesContainer = ref<HTMLDivElement | null>(null);
@@ -318,10 +340,14 @@ const messageGroups = computed(() => {
     const q = searchMessage.value.toLowerCase();
     filtered = filtered.filter(msg => msg.body && msg.body.toLowerCase().includes(q));
   }
+
+  // Enrich messages with status
+  const enrichedMessages = enrichMessagesWithStatus(filtered);
+
   const groups: { date: string; messages: any[] }[] = [];
   let currentDate = '';
   let currentGroup: any[] = [];
-  filtered.forEach(msg => {
+  enrichedMessages.forEach(msg => {
     const messageDate = new Date(msg.created);
     const dateStr = formatDate(messageDate);
     if (dateStr !== currentDate) {
@@ -358,9 +384,47 @@ async function fetchDetailChat() {
   error.value = null;
   try {
     const result = await chatService.getDetailChat(props.conversationId);
+    // Enrich messages with status agar status centang tidak hilang setelah reload
+    let backendMessages: PendingMessage[] = [];
+    if (result.conversation && Array.isArray(result.conversation.messages)) {
+      // Enrich dan pastikan id selalu number
+      backendMessages = enrichMessagesWithStatus(result.conversation.messages).map(msg => ({
+        ...msg,
+        id: typeof msg.id === 'string' ? Number(msg.id) : msg.id
+      })) as PendingMessage[];
+    }
+    // Gabungkan pendingMessages yang belum ada di backend
+    const backendMsgIds = new Set(backendMessages.map(m => m.messageId));
+    const stillPending = pendingMessages.value.filter(m => !backendMsgIds.has(m.messageId));
+    // Buat urutan pesan: backend + pending yang belum ada di backend
+    const allMessages = [...backendMessages, ...stillPending];
+    if (!result.conversation) {
+      result.conversation = {
+        conversationId: String(props.conversationId ?? ''),
+        customer: { id: 0, name: '', phone: '' },
+        involvedAgents: [],
+        totalMessages: allMessages.length,
+        messages: allMessages
+      };
+    } else {
+      result.conversation.messages = allMessages;
+    }
     conversation.value = result.conversation;
+    // Bersihkan pendingMessages yang sudah muncul di backend
+    pendingMessages.value = pendingMessages.value.filter(m => !backendMsgIds.has(m.messageId));
     // Auto scroll to bottom when chat is loaded
     scrollToBottom();
+    // Emit opened event so parent can mark conversation as read in the list
+    emit('opened', props.conversationId);
+
+    // --- Tambahan: Mark conversation as read (reset unread badge) ---
+    // Emit socket event manual jika pakai socket.io
+    if ((window as any)?.socket) {
+      ((window as any).socket.emit) && (window as any).socket.emit('message_read', {
+        conversationId: props.conversationId
+      });
+    }
+    // --- END Tambahan ---
   } catch (e) {
     error.value = e instanceof Error ? e.message : 'Failed to load chat';
   } finally {
@@ -368,7 +432,7 @@ async function fetchDetailChat() {
   }
 }
 
-function formatTime(dateStr: string) {
+function formatTime(dateStr: string) {  
   const d = new Date(dateStr);
   return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 }
@@ -410,6 +474,31 @@ async function sendMessage() {
   if (messageText.value.trim() && props.conversationId && conversation.value) {
     const message = messageText.value.trim();
     const messageId = generateMessageId();
+    const now = new Date().toISOString();
+    
+    // KASUS 1: Langsung tambahkan pesan ke UI dengan status 'sending' (jamkot)
+    const pendingMsg: PendingMessage = {
+      id: Date.now(),
+      messageId,
+      body: message,
+      direction: 'out',
+      created: now,
+      agent: {
+        id: 1,
+        name: 'You',
+        role: 'agent'
+      },
+      status: 'sending'
+    };
+    conversation.value.messages.push(pendingMsg);
+    pendingMessages.value.push(pendingMsg);
+    markMessageSending(messageId);
+    
+    // Clear message input langsung setelah muncul di UI
+    messageText.value = '';
+    
+    // Scroll to bottom untuk melihat pesan baru
+    scrollToBottom();
     
     try {
       loading.value = true;
@@ -437,6 +526,9 @@ async function sendMessage() {
         type: 'text'
       });
       
+      // Mark as sent (centang 1)
+      markMessageSent(messageId);
+      
       // Also send via chat service for internal tracking
       await chatService.sendMessage({
         conversationId: props.conversationId,
@@ -444,20 +536,30 @@ async function sendMessage() {
         messageId: messageId
       });
       
+      // Mark as delivered (centang 2) setelah sukses kirim ke WhatsApp
+      markMessageDelivered(messageId);
+      
+      // KASUS 1 FIX: Update conversation lastMessage tanpa reload
+      if (conversation.value) {
+        // Cast to any to avoid strict typing issues from backend DTO shape
+        (conversation.value as any).lastMessage = {
+          id: Date.now(),
+          messageId,
+          body: message,
+          direction: 'outgoing',  
+          created: now,
+        };
+      }
+      
       // Emit the message-sent event for real-time ChatList updates
       emit('message-sent', {
         message: message,
         conversationId: props.conversationId
       });
       
-      // Clear the message input
-      messageText.value = '';
-      
-      // Refresh the conversation to show the new message
-      await fetchDetailChat();
     } catch (error) {
       console.error('Error sending message:', error);
-      // Could show error message to user here
+      markMessageFailed(messageId);
     } finally {
       loading.value = false;
     }
@@ -472,6 +574,9 @@ watch(() => props.conversationId, fetchDetailChat, { immediate: true });
 
 // Listen for real-time updates for this conversation
 onMounted(() => {
+  // Setup message status listeners
+  setupStatusListeners();
+  
   onSocket('message_received', (response: any) => {
     if (
       response &&
@@ -497,11 +602,24 @@ onMounted(() => {
       fetchDetailChat();
     }
   });
+  
+  // Listen for message delivery confirmations from WhatsApp webhook
+  onSocket('message_delivered_webhook', (response: any) => {
+    if (response.messageId) {
+      markMessageDelivered(response.messageId);
+    }
+  });
+  
+  // Listen for message read confirmations from WhatsApp webhook
+  onSocket('message_read_webhook', (response: any) => {
+    if (response.messageId) {
+      markMessageRead(response.messageId);
+    }
+  });
 });
 // AGENT SEARCH & ADD UI LOGIC
 
 import { agentService, type Agent } from '../../../services/agent-service';
-import { isMissingDeclaration } from 'typescript';
 // Helper: Map involvedAgents to Agent type for modal display
 // (already imported computed above)
 const involvedAgentsForModal = computed<Agent[]>(() => {
@@ -621,5 +739,11 @@ function openImageModal(imageUrl: string) {
   selectedImage.value = imageUrl;
   showImageModal.value = true;
 }
+
+// Prevent "declared but its value is never read" TypeScript warnings in template-less usage
+/* istanbul ignore next */
+void getMediaUrl;
+/* istanbul ignore next */
+void openImageModal;
 
 </script>

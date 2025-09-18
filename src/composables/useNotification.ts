@@ -31,6 +31,15 @@ function generateId(): string {
 }
 
 export function useNotification() {
+  // Function to navigate to chat with specific conversation
+  const navigateToChat = (conversationId?: number) => {
+    // Use window.location to navigate to chat page with conversation ID
+    const chatUrl = conversationId 
+      ? `/chat?conversation=${conversationId}` 
+      : '/chat';
+    window.location.href = chatUrl;
+  };
+
   const showSuccessNotification = (
     title: string,
     message?: string,
@@ -63,6 +72,7 @@ export function useNotification() {
       showReplyButton?: boolean
       onReply?: () => void
       duration?: number
+      conversationId?: number // KASUS 3: Add conversationId for navigation
     } = {}
   ) => {
     const notification: AvatarNotification = {
@@ -72,7 +82,8 @@ export function useNotification() {
       message,
       avatarUrl: options.avatarUrl,
       showReplyButton: options.showReplyButton ?? true,
-      onReply: options.onReply,
+      // Default onReply navigates to chat
+      onReply: options.onReply || (() => navigateToChat(options.conversationId)),
       duration: options.duration ?? 0 // Avatar notifications don't auto-dismiss by default
     }
 
@@ -103,7 +114,8 @@ export function useNotification() {
     showSuccessNotification,
     showAvatarNotification,
     removeNotification,
-    clearAllNotifications
+    clearAllNotifications,
+    navigateToChat // KASUS 3: Export navigation function
   }
 }
 

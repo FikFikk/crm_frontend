@@ -23,6 +23,7 @@ export interface LastMessage {
   direction: string;
   created: string;
   byAgent?: ChatAgent;
+  status?: 'sending' | 'sent' | 'delivered' | 'read'; // Status pesan
 }
 
 export interface Conversation {
@@ -48,6 +49,7 @@ export interface ChatMessage {
   lastEdited?: string;
   agent?: ChatAgent;
   type?: string;
+  status?: 'sending' | 'sent' | 'delivered' | 'read'; // Status pesan
   imageURL?: string;
   videoURL?: string;
   audioURL?: string;

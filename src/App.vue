@@ -1,6 +1,49 @@
 <script setup lang="ts">
 // App.vue - Main application component
+import { onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
+import { useSocket } from './composables/useSocket'
+import { useNotification } from './composables/useNotification'
+import '../src/assets/dist/css/app.css'
+
+const router = useRouter()
+const { onSocket } = useSocket()
+const { showAvatarNotification } = useNotification()
+
+onMounted(() => {
+  onSocket('message_received', (response: any) => {
+    // Hanya tampilkan notifikasi jika bukan di halaman chat
+    const isOnChatPage = router.currentRoute.value.path.includes('/chat')
+    
+    if (!isOnChatPage && response && response.chat && response.customer) {
+      let messageContent = response.chat.body || 'Pesan baru';
+      
+      // Format pesan berdasarkan tipe
+      if (response.chat.type === 'image') {
+        messageContent = '📷 ' + messageContent;
+      } else if (response.chat.type === 'video') {
+        messageContent = '🎥 ' + messageContent;
+      } else if (response.chat.type === 'audio') {
+        messageContent = '🎵 Audio Message';
+      } else if (response.chat.type === 'document') {
+        messageContent = '📄 ' + messageContent;
+      } else if (response.chat.type === 'location') {
+        messageContent = '📍 Location Shared';
+      }
+      
+      showAvatarNotification(
+        response.customer.name || 'Customer',
+        messageContent,
+        {
+          avatarUrl: `https://ui-avatars.com/api/?name=${encodeURIComponent(response.customer.name || 'C')}&background=3b82f6&color=ffffff`,
+          conversationId: response.chat.conversationId,
+          duration: 8000 // Auto-dismiss after 8 seconds
+        }
+      );
+    }
+  });
+})
 </script>
 
 <template>
@@ -10,7 +53,7 @@ import NotificationContainer from './components/ui/NotificationContainer.vue'
   <NotificationContainer />
 </template>
 
-<style>
+<!-- <style>
 /* Global styles */
 * {
   margin: 0;
@@ -214,4 +257,4 @@ body {
   .xl\:flex { display: flex; }
   .xl\:hidden { display: none; }
 }
-</style>
+</style> -->

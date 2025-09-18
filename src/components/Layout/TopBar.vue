@@ -280,8 +280,8 @@ const currentPageTitle = computed(() => {
     'Customers': 'Customers',
     'Agents': 'Agent',
     'Chat': 'Chat',
-    'Opportunities': 'Opportunities',
-    'Activities': 'Activities'
+    'Company': 'Company',
+    'Whatsapp': 'Whatsapp'
   }
   return pageTitles[route.name as string] || 'Dashboard'
 })

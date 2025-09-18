@@ -42,7 +42,7 @@
         <ChatList ref="chatListRef" @select="handleSelectConversation" :selectedConversationId="selectedConversationId" />
       </div>
       <div class="col-span-8 xl:col-span-9">
-        <ChatBox :conversationId="selectedConversationId" @message-sent="handleMessageSent" />
+        <ChatBox :conversationId="selectedConversationId" @message-sent="handleMessageSent" @opened="handleChatOpened" @mark-as-read="handleMarkAsRead" />
       </div>
     </div>
   </DashboardLayout>
@@ -50,6 +50,7 @@
 <script setup lang="ts">
 
 import { ref, onMounted } from 'vue';
+import { useRoute } from 'vue-router';
 import DashboardLayout from '../../../components/Layout/DashboardLayout.vue';
 import ChatBox from './ChatBox.vue';
 import ChatList from './ChatList.vue';
@@ -57,6 +58,7 @@ import { useNotification } from '../../../composables/useNotification';
 import { useSocket } from '../../../composables/useSocket';
 import { whatsappService } from '../../../services/whatsapp-service';
 
+const route = useRoute();
 const { showAvatarNotification } = useNotification();
 const selectedConversationId = ref<number | null>(null);
 const chatListRef = ref<InstanceType<typeof ChatList>>();
@@ -140,6 +142,10 @@ interface WhatsAppResponse {
 
 function handleSelectConversation(conversationId: number) {
   selectedConversationId.value = conversationId;
+  // KASUS 2: Mark conversation as read when selected
+  if (chatListRef.value) {
+    chatListRef.value.markConversationAsRead(conversationId);
+  }
 }
 
 function handleMessageSent(messageData: { message: string, conversationId: number }) {
@@ -148,6 +154,29 @@ function handleMessageSent(messageData: { message: string, conversationId: numbe
       messageData.conversationId,
       messageData.message
     );
+  }
+}
+
+function handleChatOpened(convId: number) {
+  // Safely call markConversationAsRead on ChatList ref when ChatBox reports it opened a conversation
+  if (chatListRef && chatListRef.value && typeof chatListRef.value.markConversationAsRead === 'function') {
+    try {
+      chatListRef.value.markConversationAsRead(convId);
+    } catch (e) {
+      console.warn('[Chat.vue] Failed to mark conversation as read on ChatList ref', e);
+    }
+  }
+}
+
+function handleMarkAsRead(convId: number) {
+  // Handle mark-as-read event from ChatBox - reset unread badge
+  if (chatListRef && chatListRef.value && typeof chatListRef.value.markConversationAsRead === 'function') {
+    try {
+      chatListRef.value.markConversationAsRead(convId);
+      console.log(`[Chat.vue] Marked conversation ${convId} as read`);
+    } catch (e) {
+      console.warn('[Chat.vue] Failed to mark conversation as read', e);
+    }
   }
 }
 
@@ -189,8 +218,22 @@ function handleIncomingWhatsAppMessage(response: WhatsAppResponse) {
 }
 
 onMounted(() => {
+  // KASUS 3: Check URL parameter for conversation ID
+  const conversationParam = route.query.conversation;
+  if (conversationParam && typeof conversationParam === 'string') {
+    const convId = parseInt(conversationParam);
+    if (!isNaN(convId)) {
+      selectedConversationId.value = convId;
+      // Mark as read when opened via URL
+      if (chatListRef.value) {
+        chatListRef.value.markConversationAsRead(convId);
+      }
+    }
+  }
+  
   // Cek status WhatsApp dari backend saat mount
   checkWhatsAppStatus();
+  
   // Listen to socket events only once per component mount
   onSocket('message_received', handleIncomingWhatsAppMessage);
   onSocket('message_sent', (response: WhatsAppResponse) => {
