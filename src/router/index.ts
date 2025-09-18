@@ -57,14 +57,18 @@ const routes = [
     name: 'Company',
     component: Company,
     // component: () => import('@/views/profile/CompanyProfile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, 
+      allowedRoles: ['pimpinan'] 
+    }
   },
   {
     path: '/whatsapp',
     name: 'WhatsApp',
     component: Whatsapp,
     // component: () => import('@/views/profile/CompanyProfile.vue'),
-    meta: { requiresAuth: true }
+    meta: { requiresAuth: true, 
+      allowedRoles: ['pimpinan']  
+    }
   }
 ]
 
