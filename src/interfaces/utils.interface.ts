@@ -7,6 +7,15 @@ export interface DashboardStats {
   today_assignments: TodayAssignment[];
   today_chats: number;
   total_assignments: number;
+  latest_chats: LatestChat[];
+}
+
+export interface LatestChat {
+  id: number;
+  customer_id: number;
+  message: string | null;
+  created: string;
+  agent_id: number;
 }
 
 export interface AgentResponseTime {

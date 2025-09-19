@@ -3,20 +3,32 @@ import { apiFetch } from './api';
 import { apiHeaders } from './api-header';
 import { authHeader } from './auth-header';
 
-import type { DashboardStats, AgentResponseTime, TodayAssignment } from '../interfaces/utils.interface';
+import type { DashboardStats, AgentResponseTime, TodayAssignment, LatestChat } from '../interfaces/utils.interface';
 
 // Service functions
 export const utilsService = {
-	async getDashboardStats() {
-		const res = await apiFetch('/utils/dashboard-stats', {
-			method: 'GET',
-					headers: {
-						...apiHeaders(),
-						...authHeader(),
-					},
-		});
-		return res.data as DashboardStats;
-	},
+       async getDashboardStats() {
+	       const res = await apiFetch('/utils/dashboard-stats', {
+		       method: 'GET',
+		       headers: {
+			       ...apiHeaders(),
+			       ...authHeader(),
+		       },
+	       });
+	       // Return the full data object, which now includes latest_chats
+	       return res.data as DashboardStats;
+       },
+
+       async getLatestChats(limit = 5) {
+	       const res = await apiFetch(`/utils/latest-chats?limit=${limit}`, {
+		       method: 'GET',
+		       headers: {
+			       ...apiHeaders(),
+			       ...authHeader(),
+		       },
+	       });
+	       return res.latest_chats as LatestChat[];
+       },
 
 	async getCustomerCount() {
 		const res = await apiFetch('/utils/customer-count', {
