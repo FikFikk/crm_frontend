@@ -40,27 +40,17 @@ const createChart = () => {
 
   // Clone data and override bar color with green theme
 
-
-  // Sort by label (agent name) ascending
-  let sortedLabels = [...props.data.labels]
-  let sortedData = [...(props.data.datasets[0]?.data || [])]
-  if (sortedLabels.length === sortedData.length) {
-    const zipped = sortedLabels.map((label, i) => ({ label, value: sortedData[i] }))
-    zipped.sort((a, b) => a.label.localeCompare(b.label))
-    sortedLabels = zipped.map(z => z.label)
-    sortedData = zipped.map(z => z.value)
-  }
-
+  // Force override ALL bar colors to green, ignoring any color from parent
   const greenData = {
     ...props.data,
-    labels: sortedLabels,
     datasets: props.data.datasets.map(ds => {
+      // Remove any existing color to avoid blue fallback
       const { backgroundColor, borderColor, ...rest } = ds
+      // Use the same green as Tailwind bg-primary (default: #059669) and bg-primary/70
       return {
         ...rest,
-        data: sortedData,
-        backgroundColor: 'rgba(5, 150, 105, 0.7)',
-        borderColor: '#059669',
+        backgroundColor: 'rgba(5, 150, 105, 0.7)', // #059669 with 70% opacity
+        borderColor: '#059669', // Tailwind bg-primary
       }
     })
   }
