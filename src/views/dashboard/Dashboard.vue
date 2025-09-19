@@ -204,7 +204,7 @@
                       </div>
                     </div>
                     <div class="text-slate-500 text-xs ml-2">
-                      {{ formatChatTime(chat.created) }}
+                      {{ formatDateIndo(chat.created) }}
                     </div>
                   </div>
                 </div>
@@ -279,6 +279,7 @@ import { refreshIcons } from '../../utils/icon';
 import DashboardLayout from '../../components/Layout/DashboardLayout.vue'
 import BarChart from '../../components/ui/BarChart.vue'
 import { utilsService } from '../../services/utils-service';
+import { formatDateIndo } from '../../utils/formatDateIndo';
 
 // Helper to get two initials from customer name, fallback to customer id
 function getAvatarInitials(name?: string, id?: string | number): string {

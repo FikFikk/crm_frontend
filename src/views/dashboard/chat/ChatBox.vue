@@ -283,6 +283,8 @@ import ChatEmojis from './ChatEmojis.vue';
 import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
 import { useSocket } from '../../../composables/useSocket';
 import { useMessageStatus } from '../../../composables/useMessageStatus';
+import { groupMessagesByDate } from '../../../utils/groupMessagesByDate';
+import { formatTime } from '../../../utils/formatTime';
 
 const { onSocket } = useSocket();
 const { 
@@ -335,35 +337,11 @@ const messagesContainer = ref<HTMLDivElement | null>(null);
 // Group messages by date
 const messageGroups = computed(() => {
   if (!conversation.value?.messages) return [];
-  let filtered = conversation.value.messages;
-  if (searchMessage.value) {
-    const q = searchMessage.value.toLowerCase();
-    filtered = filtered.filter(msg => msg.body && msg.body.toLowerCase().includes(q));
-  }
-
-  // Enrich messages with status
-  const enrichedMessages = enrichMessagesWithStatus(filtered);
-
-  const groups: { date: string; messages: any[] }[] = [];
-  let currentDate = '';
-  let currentGroup: any[] = [];
-  enrichedMessages.forEach(msg => {
-    const messageDate = new Date(msg.created);
-    const dateStr = formatDate(messageDate);
-    if (dateStr !== currentDate) {
-      if (currentGroup.length > 0) {
-        groups.push({ date: currentDate, messages: currentGroup });
-      }
-      currentDate = dateStr;
-      currentGroup = [msg];
-    } else {
-      currentGroup.push(msg);
-    }
-  });
-  if (currentGroup.length > 0) {
-    groups.push({ date: currentDate, messages: currentGroup });
-  }
-  return groups;
+  return groupMessagesByDate(
+    conversation.value.messages,
+    enrichMessagesWithStatus,
+    searchMessage.value
+  );
 });
 
 // Function to scroll to bottom of messages
@@ -432,38 +410,6 @@ async function fetchDetailChat() {
   }
 }
 
-function formatTime(dateStr: string) {  
-  const d = new Date(dateStr);
-  return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-}
-
-function formatDate(date: Date) {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-  
-  const diffTime = today.getTime() - msgDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    return 'Hari ini';
-  } else if (diffDays === 1) {
-    return 'Kemarin';
-  } else {
-    // Format: DD Month YYYY (Indonesian)
-    const months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    ];
-    
-    const day = date.getDate();
-    const month = months[date.getMonth()];
-    const year = date.getFullYear();
-    
-    return `${day} ${month} ${year}`;
-  }
-}
-
 function addEmoji(emoji: string) {
   messageText.value += emoji;
   // Focus back to textarea after adding emoji
@@ -485,7 +431,7 @@ async function sendMessage() {
       created: now,
       agent: {
         id: 1,
-        name: 'You',
+        name: '',
         role: 'agent'
       },
       status: 'sending'

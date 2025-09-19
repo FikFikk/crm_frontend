@@ -42,7 +42,7 @@
                       <div class="ml-2 overflow-hidden flex-1">
                         <div class="flex items-center justify-between">
                           <a href="javascript:;" class="font-medium truncate">{{ conv.customer.name }}</a>
-                          <div class="text-xs text-slate-400 ml-auto">{{ formatTime(conv.lastMessage.created) }}</div>
+                          <div class="text-xs text-slate-400 ml-auto">{{ formatTimeChatList(conv.lastMessage.created) }}</div>
                         </div>
                         <div class="flex items-center gap-1 w-full mt-0.5">
                           <div class="truncate text-slate-500 text-sm flex-1">{{ conv.lastMessage.body }}</div>
@@ -180,41 +180,10 @@ const filteredConversations = computed(() => {
   );
 });
 
-function formatTime(dateStr: string) {
-  const messageDate = new Date(dateStr);
-  if (isNaN(messageDate.getTime())) {
-    return 'Invalid Date';
-  }
-  
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const msgDate = new Date(messageDate.getFullYear(), messageDate.getMonth(), messageDate.getDate());
-  
-  const diffTime = today.getTime() - msgDate.getTime();
-  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-  
-  if (diffDays === 0) {
-    // Today - show time with AM/PM
-    return messageDate.toLocaleTimeString('id-ID', { 
-      hour: '2-digit', 
-      minute: '2-digit',
-      hour12: true 
-    });
-  } else if (diffDays === 1) {
-    // Yesterday
-    return 'Kemarin';
-  } else if (diffDays >= 2 && diffDays <= 7) {
-    // Show day name for 2-7 days ago
-    const dayNames = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-    return dayNames[messageDate.getDay()];
-  } else {
-    // More than 7 days - show date format DD/MM/YY
-    const day = messageDate.getDate().toString().padStart(2, '0');
-    const month = (messageDate.getMonth() + 1).toString().padStart(2, '0');
-    const year = messageDate.getFullYear().toString().slice(-2);
-    return `${day}/${month}/${year}`;
-  }
-}
+
+import { formatTimeChatList } from '../../../utils/formatTimeChatList';
+
+// Use formatTimeChatList from utility file
 
 function handleSelect(conversationId: number) {
   console.log('[ChatList] emit select:', conversationId);
