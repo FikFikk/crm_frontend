@@ -1,7 +1,9 @@
 // Icon initialization for Feather icons
 declare global {
   interface Window {
-    feather: any;
+    feather?: {
+      replace(): void;
+    };
   }
 }
 

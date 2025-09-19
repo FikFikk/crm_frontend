@@ -1,18 +1,26 @@
 // Interfaces for utils-service
 
+
+export interface StatWithGrowth {
+  value: number;
+  percent_change: number;
+  message: string;
+}
+
 export interface DashboardStats {
-  customer_count: number;
+  customer_count: StatWithGrowth;
+  agent_count: StatWithGrowth;
+  total_assignments: StatWithGrowth;
+  today_chats: StatWithGrowth;
   agent_response_times: AgentResponseTime[];
-  agent_count: number;
   today_assignments: TodayAssignment[];
-  today_chats: number;
-  total_assignments: number;
   latest_chats: LatestChat[];
 }
 
 export interface LatestChat {
   id: number;
   customer_id: number;
+  customer_name: string;
   message: string | null;
   created: string;
   agent_id: number;
