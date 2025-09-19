@@ -186,21 +186,13 @@ import CreateAgentModal from '../../../components/agent/CreateAgentModal.vue';
 import EditAgentModal from '../../../components/agent/EditAgentModal.vue';
 import { useNotification } from '../../../composables/useNotification'
 
-// Display interface for template (maps API data to display format)
-interface Agent {
-    id: number;
-    name: string;
-    department: string;
-    phone: string;
-    email: string;
-    photo: string;
-    status: 'Active' | 'Inactive';
-    joinDate: string;
-}
+
+
+import type { DisplayAgent } from '../../../interfaces/display-agent.interface';
 
 // Reactive data
 const searchQuery = ref('');
-const agents = ref<Agent[]>([]);
+const agents = ref<DisplayAgent[]>([]);
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
@@ -231,11 +223,10 @@ const loadAgents = async () => {
         
         // Transform API data to display format
         agents.value = apiAgents.map((apiAgent: ApiAgent) => ({
-            id: apiAgent.id,
+            ...apiAgent,
             name: agentService.getFullName(apiAgent),
             department: apiAgent.role,
             phone: agentService.getFormattedPhone(apiAgent),
-            email: apiAgent.email,
             photo: agentService.getAgentPhotoUrl(apiAgent),
             status: agentService.getAgentStatus(apiAgent),
             joinDate: new Date(apiAgent.created).toLocaleDateString()
@@ -248,7 +239,7 @@ const loadAgents = async () => {
     }
 };
 
-const deleteAgentDirect = async (agent: Agent) => {
+const deleteAgentDirect = async (agent: DisplayAgent) => {
     const confirmed = confirm(`Are you sure you want to delete agent "${agent.name}"?\n\nThis action cannot be undone.`);
     if (!confirmed) return;
     try {
@@ -277,9 +268,7 @@ const handleCreateAgent = async (agentData: CreateAgentRequest) => {
         showSuccessNotification(apiResult?.message || 'Agent created successfully!');
         createAgentModalRef.value?.setSuccess('Agent created successfully!');
         await loadAgents();
-        setTimeout(() => {
-            showCreateModal.value = false;
-        }, 1200);
+        showCreateModal.value = false;
     } catch (err) {
         createAgentModalRef.value?.setError(err instanceof Error ? err.message : 'Failed to create agent');
     } finally {
@@ -290,22 +279,20 @@ const handleCloseCreateModal = () => {
     showCreateModal.value = false;
 };
 
-const openEditModal = (agent: Agent) => {
-    // Find the full ApiAgent from the original API data (not mapped display)
-    const apiAgent = agents.value.find(a => a.id === agent.id);
-    if (apiAgent) {
-        // You may want to keep the original API agent data for editing
-        selectedAgent.value = {
-            id: agent.id,
-            firstName: agent.name.split(' ')[0], // crude split, adjust as needed
-            surname: agent.name.split(' ').slice(1).join(' '),
-            email: agent.email,
-            phone: agent.phone,
-            role: agent.department,
-            // Add other fields as needed
-        } as ApiAgent;
-        showEditModal.value = true;
-    }
+const openEditModal = (agent: DisplayAgent) => {
+    // Map display Agent back to ApiAgent for editing
+    selectedAgent.value = {
+        id: agent.id,
+        firstName: agent.name.split(' ')[0],
+        surname: agent.name.split(' ').slice(1).join(' '),
+        email: agent.email,
+        phone: agent.phone,
+        role: agent.department,
+        companyId: 0,
+        companyName: '',
+        created: '',
+    };
+    showEditModal.value = true;
 };
 
 const handleEditAgent = async ({ id, data }: { id: number, data: any }) => {
@@ -316,12 +303,10 @@ const handleEditAgent = async ({ id, data }: { id: number, data: any }) => {
         showSuccessNotification(apiResult?.message || 'Agent updated successfully!');
         editAgentModalRef.value?.setSuccess('Agent updated successfully!');
         await loadAgents();
-        setTimeout(() => {
-            showEditModal.value = false;
-        }, 1200);
+        showEditModal.value = false;
+        isEditing.value = false;
     } catch (err) {
         editAgentModalRef.value?.setError(err instanceof Error ? err.message : 'Failed to update agent');
-    } finally {
         isEditing.value = false;
     }
 };
@@ -352,7 +337,7 @@ const filteredAgents = computed(() => {
         agent.name.toLowerCase().includes(query) ||
         agent.department.toLowerCase().includes(query) ||
         agent.email.toLowerCase().includes(query) ||
-        agent.phone.includes(query)
+        (agent.phone ? agent.phone.includes(query) : false)
     );
 });
 
