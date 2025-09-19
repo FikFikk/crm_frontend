@@ -47,7 +47,7 @@
                     </div>
 
                     <!-- Kanan: Search -->
-                    <div class="w-56 relative text-slate-500">
+                    <div class="w-56 relative text-slate-500 ml-auto">
                         <input 
                             type="text" 
                             class="form-control w-56 box pr-10" 

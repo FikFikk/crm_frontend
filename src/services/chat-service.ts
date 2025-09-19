@@ -34,6 +34,7 @@ export interface Conversation {
   primaryAgent: ChatAgent;
   lastMessage: LastMessage;
   totalMessages: number;
+  messages?: ChatMessage[]; // Tambahan: array pesan terakhir (opsional, untuk ChatList centang)
 }
 
 export interface ConversationListResponse {

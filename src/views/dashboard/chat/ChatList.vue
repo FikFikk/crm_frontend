@@ -19,13 +19,13 @@
         </div> -->
         <div class="tab-content">
             <div id="chats" class="tab-pane active" role="tabpanel" aria-labelledby="chats-tab">
-                <div class="pr-1">
-                    <div class="box px-5 py-5 pt-5 pb-5 lg:pb-0">
-                        <div class="relative text-slate-500">
-                            <input v-model="search" type="text" class="form-control py-3 px-4 border-transparent bg-slate-100 pr-10" placeholder="Search for messages or users...">
-                            <i class="w-4 h-4 hidden sm:absolute my-auto inset-y-0 mr-3 right-0" data-feather="search"></i> 
-                        </div>
+                <div class="pr-1 mb-2">
+                  <div class="box px-5 py-4">
+                    <div class="relative text-slate-500">
+                      <input v-model="search" type="text" class="form-control py-3 px-4 border-transparent bg-slate-100 pr-10" placeholder="Search for messages or users...">
+                      <i class="w-4 h-4 hidden sm:absolute my-auto inset-y-0 mr-3 right-0" data-feather="search"></i>
                     </div>
+                  </div>
                 </div>
                 <div class="chat__chat-list overflow-y-auto scrollbar-hidden pr-1 pt-1 mt-4" style="height: 500px;">
                   <div v-if="loading" class="text-center py-4 text-slate-400">Loading chats...</div>
@@ -42,7 +42,7 @@
                       <div class="ml-2 overflow-hidden flex-1">
                         <div class="flex items-center justify-between">
                           <a href="javascript:;" class="font-medium truncate">{{ conv.customer.name }}</a>
-                          <div class="text-xs text-slate-400 ml-2 flex-shrink-0">{{ formatTime(conv.lastMessage.created) }}</div>
+                          <div class="text-xs text-slate-400 ml-auto">{{ formatTime(conv.lastMessage.created) }}</div>
                         </div>
                         <div class="flex items-center gap-1 w-full mt-0.5">
                           <div class="truncate text-slate-500 text-sm flex-1">{{ conv.lastMessage.body }}</div>

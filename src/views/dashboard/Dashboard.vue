@@ -9,7 +9,7 @@
               <h2 class="text-lg font-medium truncate mr-5">
                 General Report
               </h2>
-              <a href="" class="ml-auto flex items-center text-primary" @click.prevent="refreshData">
+              <a href="" class="ml-auto flex items-center " @click.prevent="refreshData">
                 <i data-feather="refresh-ccw" class="w-4 h-4 mr-3"></i> Reload Data
               </a>
             </div>
@@ -192,12 +192,13 @@
                 <h2 class="text-lg font-medium truncate mr-5">
                   Latest Chats
                 </h2>
+                <a href="/chat" class="ml-auto truncate">Show More</a>
               </div>
               <div class="mt-5">
                 <div class="intro-x" v-for="chat in dashboardStats?.latest_chats || []" :key="chat.id">
                   <div class="box px-5 py-3 mb-3 flex items-center zoom-in">
                     <!-- UI avatar: two initials from customer_name, fallback to customer_id -->
-                    <div class="w-10 h-10 flex-none rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
+                    <div class="w-10 h-10 flex-none rounded-full bg-primary/10 flex items-center justify-center font-bold text-lg">
                       {{ getAvatarInitials(chat.customer_name, chat.customer_id) }}
                     </div>
                     <div class="ml-4 mr-auto">
@@ -213,32 +214,33 @@
                     </div>
                   </div>
                 </div>
-                <a href="/chat" class="intro-x w-full block text-center rounded-md py-3 border border-dotted border-slate-400 dark:border-darkmode-300 text-slate-500">View More</a>
+                <!-- <a href="/chat" class="intro-x w-full block text-center rounded-md py-3 border border-dotted border-slate-400 dark:border-darkmode-300 text-slate-500">View More</a> -->
               </div>
             </div>
             <!-- END: Transactions -->
             
             <!-- BEGIN: Recent Activities -->
-            <div class="col-span-12 md:col-span-6 xl:col-span-4 2xl:col-span-12 mt-3">
+            <div class="col-span-12 md:col-span-6 xl:col-span-4 2xl:col-span-12">
               <div class="intro-x flex items-center h-10">
                 <h2 class="text-lg font-medium truncate mr-5">
                   Recent Activities
                 </h2>
-                <a href="" class="ml-auto text-primary truncate">Show More</a>
+                <a href="/agents" class="ml-auto truncate">Show More</a>
               </div>
               <div class="mt-5 relative before:block before:absolute before:w-px before:h-[85%] before:bg-slate-200 before:dark:bg-darkmode-400 before:ml-5 before:mt-5">
-                <div class="intro-x relative flex items-center mb-3" v-for="activity in recentActivities" :key="activity.id">
+                <div class="intro-x relative flex items-center mb-3" v-for="recent in dashboardStats?.recent_activities || []" :key="recent.id">
                   <div class="before:block before:absolute before:w-20 before:h-px before:bg-slate-200 before:dark:bg-darkmode-400 before:mt-5 before:ml-5">
-                    <div class="w-10 h-10 flex-none image-fit rounded-full overflow-hidden">
-                      <img alt="Profile" :src="activity.avatar">
+                    <div class="w-10 h-10 flex-none rounded-full bg-primary/10 flex items-center justify-center font-bold text-lg overflow-hidden">
+                      <!-- <img alt="Profile" :src="recent.avatar"> -->
+                      {{ getAvatarInitials(recent.title, recent.id) }}
                     </div>
                   </div>
                   <div class="box px-5 py-3 ml-4 flex-1 zoom-in">
                     <div class="flex items-center">
-                      <div class="font-medium">{{ activity.name }}</div>
-                      <div class="text-xs text-slate-500 ml-auto">{{ activity.time }}</div>
+                      <div class="font-medium">{{ recent.title }}</div>
+                      <div class="text-xs text-slate-500 ml-auto">{{ formatChatTime(recent.created) }}</div>
                     </div>
-                    <div class="text-slate-500 mt-1">{{ activity.description }}</div>
+                    <div class="text-slate-500 mt-1">{{ recent.description }}</div>
                   </div>
                 </div>
               </div>
@@ -332,38 +334,6 @@ onMounted(() => {
 watch(dashboardStats, () => {
   refreshIcons();
 });
-
-
-const recentActivities = ref([
-  { 
-    id: 1, 
-    name: 'Leonardo DiCaprio', 
-    avatar: '/assets/images/profile-14.jpg',
-    time: '07:00 PM',
-    description: 'Has joined the team'
-  },
-  { 
-    id: 2, 
-    name: 'Russell Crowe', 
-    avatar: '/assets/images/profile-3.jpg',
-    time: '07:00 PM',
-    description: 'Added 3 new photos'
-  },
-  { 
-    id: 3, 
-    name: 'Denzel Washington', 
-    avatar: '/assets/images/profile-14.jpg',
-    time: '07:00 PM',
-    description: 'Has changed Apple MacBook Pro 13 price and description'
-  },
-  { 
-    id: 4, 
-    name: 'Morgan Freeman', 
-    avatar: '/assets/images/profile-8.jpg',
-    time: '07:00 PM',
-    description: 'Has changed Nikon Z6 description'
-  }
-])
 
 </script>
 
