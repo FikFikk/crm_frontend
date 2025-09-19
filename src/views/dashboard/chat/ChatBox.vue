@@ -278,7 +278,7 @@
 <script setup lang="ts">
 import { ref, watch, computed, nextTick, onMounted } from 'vue';
 import { chatService, type ConversationDetail, type ChatMessage } from '../../../services/chat-service';
-import { whatsappService } from '../../../services/whatsapp-service';
+// import { whatsappService } from '../../../services/whatsapp-service';
 import ChatEmojis from './ChatEmojis.vue';
 import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
 import { useSocket } from '../../../composables/useSocket';
@@ -504,27 +504,27 @@ async function sendMessage() {
       loading.value = true;
       
       // Get customer phone from conversation
-      const customerPhone = conversation.value.customer.phone;
+      // const customerPhone = conversation.value.customer.phone;
       
       // Get API key from localStorage user
-      const userStr = localStorage.getItem('user');
-      let apiKey = '';
-      if (userStr) {
-        try {
-          const userObj = JSON.parse(userStr);
-          apiKey = userObj.api_key || 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
-        } catch (e) {
-          apiKey = 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
-        }
-      }
+      // const userStr = localStorage.getItem('user');
+      // let apiKey = '';
+      // if (userStr) {
+      //   try {
+      //     const userObj = JSON.parse(userStr);
+      //     apiKey = userObj.api_key || 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
+      //   } catch (e) {
+      //     apiKey = 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
+      //   }
+      // }
       
       // Send via WhatsApp service
-      await whatsappService.sendMessage({
-        phone: customerPhone,
-        message: message,
-        api_key: apiKey,
-        type: 'text'
-      });
+      // await whatsappService.sendMessage({
+      //   phone: customerPhone,
+      //   message: message,
+      //   api_key: apiKey,
+      //   type: 'text'
+      // });
       
       // Mark as sent (centang 1)
       markMessageSent(messageId);
