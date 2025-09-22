@@ -148,11 +148,13 @@ function handleSelectConversation(conversationId: number) {
   }
 }
 
-function handleMessageSent(messageData: { message: string, conversationId: number }) {
+function handleMessageSent(messageData: { message: string, conversationId: number, messageId?: string, status?: string }) {
   if (chatListRef.value) {
     chatListRef.value.updateConversationLastMessage(
       messageData.conversationId,
-      messageData.message
+      messageData.message,
+      messageData.messageId,
+      messageData.status
     );
   }
 }
@@ -235,13 +237,19 @@ onMounted(() => {
   checkWhatsAppStatus();
   
   // Listen to socket events only once per component mount
-  onSocket('message_received', handleIncomingWhatsAppMessage);
-  onSocket('message_sent', (response: WhatsAppResponse) => {
+  onSocket('message_received', (...args: unknown[]) => {
+    const response = args[0] as WhatsAppResponse;
+    handleIncomingWhatsAppMessage(response);
+  });
+  onSocket('message_sent', (...args: unknown[]) => {
+    const response = args[0] as WhatsAppResponse;
     if (chatListRef.value && response.success) {
       if (selectedConversationId.value !== null) {
         chatListRef.value.updateConversationLastMessage(
           selectedConversationId.value,
-          response.chat.body
+          response.chat.body,
+          response.chat.messageId,
+          'delivered' // Default status for socket events
         );
       }
     }

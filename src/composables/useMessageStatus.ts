@@ -6,8 +6,30 @@ import { useSocket } from './useSocket';
 
 const { onSocket, emitSocket } = useSocket();
 
-// Global message status registry
-const messageStatusRegistry = reactive<Map<string, MessageStatus>>(new Map());
+// Global message status registry with localStorage persistence
+const loadStatusFromStorage = (): Map<string, MessageStatus> => {
+  try {
+    const stored = localStorage.getItem('messageStatusRegistry');
+    if (stored) {
+      const data = JSON.parse(stored);
+      return new Map(data);
+    }
+  } catch (e) {
+    console.warn('Failed to load message status from localStorage:', e);
+  }
+  return new Map();
+};
+
+const saveStatusToStorage = (registry: Map<string, MessageStatus>) => {
+  try {
+    const data = Array.from(registry.entries());
+    localStorage.setItem('messageStatusRegistry', JSON.stringify(data));
+  } catch (e) {
+    console.warn('Failed to save message status to localStorage:', e);
+  }
+};
+
+const messageStatusRegistry = reactive<Map<string, MessageStatus>>(loadStatusFromStorage());
 
 export function useMessageStatus() {
   
@@ -16,7 +38,17 @@ export function useMessageStatus() {
    */
   const updateMessageStatus = (messageId: string, status: MessageStatus) => {
     messageStatusRegistry.set(messageId, status);
+    saveStatusToStorage(messageStatusRegistry); // Persist to localStorage
     // console.log(`[MessageStatus] Updated ${messageId} to ${status}`);
+  };
+
+  /**
+   * Update status pesan dari backend (higher priority)
+   */
+  const updateMessageStatusFromBackend = (messageId: string, status: MessageStatus) => {
+    messageStatusRegistry.set(messageId, status);
+    saveStatusToStorage(messageStatusRegistry); // Persist to localStorage
+    console.log(`[MessageStatus] Backend update ${messageId} to ${status}`);
   };
 
   /**
@@ -136,6 +168,7 @@ export function useMessageStatus() {
     // Clear all statuses if registry gets too large
     if (messageStatusRegistry.size > 1000) {
       messageStatusRegistry.clear();
+      saveStatusToStorage(messageStatusRegistry); // Update localStorage
     }
   };
 
@@ -145,6 +178,7 @@ export function useMessageStatus() {
     
     // Status getters/setters
     updateMessageStatus,
+    updateMessageStatusFromBackend,
     getMessageStatus,
     
     // Status markers

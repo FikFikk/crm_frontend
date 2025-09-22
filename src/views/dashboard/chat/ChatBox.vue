@@ -294,7 +294,8 @@ const {
   markMessageRead,
   markMessageFailed,
   enrichMessagesWithStatus,
-  setupStatusListeners
+  setupStatusListeners,
+  updateMessageStatusFromBackend
 } = useMessageStatus();
 
 // Ambil currentUser dari localStorage (auth context)
@@ -320,7 +321,7 @@ function onSearchMessage() {}
 
 const props = defineProps<{ conversationId: number | null }>();
 const emit = defineEmits<{
-  'message-sent': [messageData: { message: string, conversationId: number }],
+  'message-sent': [messageData: { message: string, conversationId: number, messageId?: string, status?: string }],
   'opened': [conversationId: number]
 }>();
 const loading = ref(false);
@@ -365,17 +366,69 @@ async function fetchDetailChat() {
     // Enrich messages with status agar status centang tidak hilang setelah reload
     let backendMessages: PendingMessage[] = [];
     if (result.conversation && Array.isArray(result.conversation.messages)) {
-      // Enrich dan pastikan id selalu number
-      backendMessages = enrichMessagesWithStatus(result.conversation.messages).map(msg => ({
-        ...msg,
-        id: typeof msg.id === 'string' ? Number(msg.id) : msg.id
-      })) as PendingMessage[];
+      // Preserve local status by checking current conversation messages and pendingMessages
+      const currentLocalMessages = new Map<string, PendingMessage>();
+      
+      // Collect current local messages (from conversation and pendingMessages)
+      if (conversation.value?.messages) {
+        for (const msg of conversation.value.messages) {
+          if (msg.messageId) {
+            currentLocalMessages.set(msg.messageId, msg);
+          }
+        }
+      }
+      for (const msg of pendingMessages.value) {
+        if (msg.messageId) {
+          currentLocalMessages.set(msg.messageId, msg);
+        }
+      }
+      
+      // Enrich backend messages with preserved local status
+      backendMessages = result.conversation.messages.map(msg => {
+        const localMsg = currentLocalMessages.get(msg.messageId || '');
+        // Determine final status with preference: backend > local > default
+        let finalStatus: 'sending' | 'sent' | 'delivered' | 'read';
+        if (msg.direction === 'out') {
+          // For outgoing messages, prefer backend status first (since it's now reliable), then local, then default
+          finalStatus = (msg.status as 'sending' | 'sent' | 'delivered' | 'read') || localMsg?.status || 'sent';
+        } else {
+          // For incoming messages, just use backend status or default
+          finalStatus = (msg.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
+        }
+        
+        // Update status registry from backend data for persistence
+        if (msg.messageId && msg.status) {
+          updateMessageStatusFromBackend(msg.messageId, finalStatus);
+        }
+        
+        // Debug: Log status resolution for outgoing messages
+        if (msg.direction === 'out') {
+          console.log(`[ChatBox] Message ${msg.messageId}:`, {
+            localStatus: localMsg?.status,
+            backendStatus: msg.status,
+            finalStatus: finalStatus,
+            messageBody: msg.body?.substring(0, 20) + '...'
+          });
+        }
+        
+        return {
+          ...msg,
+          id: typeof msg.id === 'string' ? Number(msg.id) : msg.id,
+          // Priority: local status > backend status > default 'sent'
+          status: finalStatus
+        } as PendingMessage;
+      });
     }
-    // Gabungkan pendingMessages yang belum ada di backend
+    
+    // Only keep pendingMessages that are NOT in backend (truly pending)
     const backendMsgIds = new Set(backendMessages.map(m => m.messageId));
-    const stillPending = pendingMessages.value.filter(m => !backendMsgIds.has(m.messageId));
-    // Buat urutan pesan: backend + pending yang belum ada di backend
+    const stillPending = pendingMessages.value.filter(m => m.messageId && !backendMsgIds.has(m.messageId));
+    
+    // Combine: backend messages (with preserved status) + truly pending messages
     const allMessages = [...backendMessages, ...stillPending];
+    
+    // Update pendingMessages to only contain messages NOT yet in backend
+    pendingMessages.value = stillPending;
     if (!result.conversation) {
       result.conversation = {
         conversationId: String(props.conversationId ?? ''),
@@ -388,8 +441,6 @@ async function fetchDetailChat() {
       result.conversation.messages = allMessages;
     }
     conversation.value = result.conversation;
-    // Bersihkan pendingMessages yang sudah muncul di backend
-    pendingMessages.value = pendingMessages.value.filter(m => !backendMsgIds.has(m.messageId));
     // Auto scroll to bottom when chat is loaded
     scrollToBottom();
     // Emit opened event so parent can mark conversation as read in the list
@@ -422,7 +473,7 @@ async function sendMessage() {
     const messageId = generateMessageId();
     const now = new Date().toISOString();
     
-    // KASUS 1: Langsung tambahkan pesan ke UI dengan status 'sending' (jamkot)
+    // KASUS 1: Add message to pending (will be shown via computed messages)
     const pendingMsg: PendingMessage = {
       id: Date.now(),
       messageId,
@@ -436,9 +487,15 @@ async function sendMessage() {
       },
       status: 'sending'
     };
-    conversation.value.messages.push(pendingMsg);
+    // Only add to pendingMessages, not to conversation.messages directly
+    // This prevents duplication when fetchDetailChat() is called
     pendingMessages.value.push(pendingMsg);
     markMessageSending(messageId);
+    
+    // Manually update conversation.messages for immediate UI display
+    if (conversation.value?.messages) {
+      conversation.value.messages.push(pendingMsg);
+    }
     
     // Clear message input langsung setelah muncul di UI
     messageText.value = '';
@@ -449,41 +506,38 @@ async function sendMessage() {
     try {
       loading.value = true;
       
-      // Get customer phone from conversation
-      // const customerPhone = conversation.value.customer.phone;
-      
-      // Get API key from localStorage user
-      // const userStr = localStorage.getItem('user');
-      // let apiKey = '';
-      // if (userStr) {
-      //   try {
-      //     const userObj = JSON.parse(userStr);
-      //     apiKey = userObj.api_key || 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
-      //   } catch (e) {
-      //     apiKey = 'crm_e54c761e1dec987a98a0fdb593ff95dbd2fe5813'; // fallback to default
-      //   }
-      // }
-      
-      // Send via WhatsApp service
-      // await whatsappService.sendMessage({
-      //   phone: customerPhone,
-      //   message: message,
-      //   api_key: apiKey,
-      //   type: 'text'
-      // });
-      
-      // Mark as sent (centang 1)
+      // Step 1: Mark as sent (centang 1) after a short delay
+      await new Promise(resolve => setTimeout(resolve, 500));
       markMessageSent(messageId);
       
-      // Also send via chat service for internal tracking
+      // Update status in both conversation.messages and pendingMessages
+      const updateMessageStatus = (status: 'sending' | 'sent' | 'delivered' | 'read') => {
+        if (conversation.value?.messages) {
+          const messageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
+          if (messageIndex !== -1) {
+            conversation.value.messages[messageIndex].status = status;
+          }
+        }
+        
+        const pendingIndex = pendingMessages.value.findIndex(m => m.messageId === messageId);
+        if (pendingIndex !== -1) {
+          pendingMessages.value[pendingIndex].status = status;
+        }
+      };
+      
+      updateMessageStatus('sent');
+      
+      // Step 2: Send message to backend
       await chatService.sendMessage({
         conversationId: props.conversationId,
         message: message,
         messageId: messageId
       });
       
-      // Mark as delivered (centang 2) setelah sukses kirim ke WhatsApp
+      // Step 3: Mark as delivered (centang 2) after successful backend call
+      await new Promise(resolve => setTimeout(resolve, 300));
       markMessageDelivered(messageId);
+      updateMessageStatus('delivered');
       
       // KASUS 1 FIX: Update conversation lastMessage tanpa reload
       if (conversation.value) {
@@ -494,18 +548,34 @@ async function sendMessage() {
           body: message,
           direction: 'outgoing',  
           created: now,
+          status: 'delivered' // Include status for ChatList
         };
       }
       
       // Emit the message-sent event for real-time ChatList updates
       emit('message-sent', {
         message: message,
-        conversationId: props.conversationId
+        conversationId: props.conversationId,
+        messageId: messageId,
+        status: 'delivered'
       });
       
     } catch (error) {
       console.error('Error sending message:', error);
       markMessageFailed(messageId);
+      
+      // Update status to failed in UI
+      if (conversation.value?.messages) {
+        const messageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
+        if (messageIndex !== -1) {
+          conversation.value.messages[messageIndex].status = 'sending'; // Keep as sending to show retry
+        }
+      }
+      
+      const pendingIndex = pendingMessages.value.findIndex(m => m.messageId === messageId);
+      if (pendingIndex !== -1) {
+        pendingMessages.value[pendingIndex].status = 'sending'; // Keep as sending to show retry
+      }
     } finally {
       loading.value = false;
     }
@@ -547,7 +617,9 @@ onMounted(() => {
         (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
-      fetchDetailChat();
+      // Don't fetchDetailChat() here to prevent duplicate messages when we send our own messages
+      // The message is already added locally in sendMessage() function
+      console.log('Message sent event received for conversation:', props.conversationId);
     }
   });
   

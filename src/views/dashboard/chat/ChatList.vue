@@ -48,8 +48,8 @@
                           <div class="truncate text-slate-500 text-sm flex-1">{{ conv.lastMessage.body }}</div>
                           <!-- Show status icon only for outgoing messages -->
                           <MessageStatusIcon 
-                            v-if="conv.lastMessage.direction === 'outgoing'" 
-                            :status="getMessageStatus(conv.lastMessage.messageId) || 'sent'"
+                            v-if="conv.lastMessage.direction === 'out'" 
+                            :status="conv.lastMessage.status || getMessageStatus(conv.lastMessage.messageId) || 'sent'"
                             class="flex-shrink-0 opacity-70"
                           />
                         </div>
@@ -75,7 +75,7 @@ import { useMessageStatus } from '../../../composables/useMessageStatus';
 import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
 
 const { onSocket } = useSocket();
-const { getMessageStatus } = useMessageStatus();
+const { getMessageStatus, updateMessageStatusFromBackend } = useMessageStatus();
 
 const props = defineProps<{ selectedConversationId?: number | null }>();
 const conversations = ref<Conversation[]>([]);
@@ -92,7 +92,16 @@ const loadConversations = async () => {
   loading.value = true;
   error.value = null;
   try {
-    conversations.value = await chatService.getConversations();
+    conversations.value = (await chatService.getConversations()).map(conv => {
+      // Hapus status jika pesan masuk
+      if (conv.lastMessage?.direction !== 'out') {
+        conv.lastMessage.status = undefined;
+      } else if (conv.lastMessage?.messageId && conv.lastMessage?.status) {
+        // Simpan status outgoing ke localStorage
+        updateMessageStatusFromBackend(conv.lastMessage.messageId, conv.lastMessage.status as 'sending' | 'sent' | 'delivered' | 'read');
+      }
+      return conv;
+    });
   } catch (e) {
     console.error('Error in loadConversations:', e);
     
@@ -118,17 +127,25 @@ const loadConversations = async () => {
 };
 
 // Function to update a specific conversation's last message
-const updateConversationLastMessage = (conversationId: number, messageText: string) => {
+const updateConversationLastMessage = (conversationId: number, messageText: string, messageId?: string, status?: string) => {
   const conversationIndex = conversations.value.findIndex(conv => conv.conversationId === conversationId);
   if (conversationIndex !== -1) {
+    const finalStatus = (status as 'sending' | 'sent' | 'delivered' | 'read') || 'sent';
+    
+    // Update status in localStorage for persistence
+    if (messageId) {
+      updateMessageStatusFromBackend(messageId, finalStatus);
+    }
+    
     // Create a proper message object with current timestamp
     conversations.value[conversationIndex].lastMessage = {
       id: Date.now(), // Temporary ID
-      messageId: `msg_${Date.now()}`,
+      messageId: messageId || `msg_${Date.now()}`,
       body: messageText,
-      direction: 'outgoing',
+      direction: 'out', // Use 'out' to match backend API format
       created: new Date().toISOString(),
-      byAgent: undefined // Since it's sent by user, not by agent
+      byAgent: undefined, // Since it's sent by user, not by agent
+      status: finalStatus // Include status for icon display
     };
     conversations.value[conversationIndex].totalMessages += 1;
     
@@ -219,12 +236,22 @@ onMounted(() => {
 
       const idx = conversations.value.findIndex(conv => Number(conv.conversationId) === convId);
       if (idx !== -1) {
+        const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+        const direction = (chat.direction as string) || 'in';
+        const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
+        
+        // Only update status in localStorage for outgoing messages
+        if (direction === 'out') {
+          updateMessageStatusFromBackend(messageId, status);
+        }
+        
         conversations.value[idx].lastMessage = {
           id: (chat.id as number) || Date.now(),
-          messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+          messageId: messageId,
           body: (chat.body as string),
-          direction: (chat.direction as string) || 'incoming',
+          direction: direction,
           created: (chat.created as string) || new Date().toISOString(),
+          status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
           byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
         };
         conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
@@ -237,6 +264,15 @@ onMounted(() => {
       } else {
         // Add new conversation to list; normalize conversationId to number
         const customer = response.customer as Record<string, unknown>;
+        const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+        const direction = (chat.direction as string) || 'in';
+        const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
+        
+        // Only update status in localStorage for outgoing messages
+        if (direction === 'out') {
+          updateMessageStatusFromBackend(messageId, status);
+        }
+        
         conversations.value.unshift({
           conversationId: convId,
           customerId: (customer?.id as number) || 0,
@@ -245,10 +281,11 @@ onMounted(() => {
           primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
           lastMessage: {
             id: (chat.id as number) || Date.now(),
-            messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+            messageId: messageId,
             body: (chat.body as string),
-            direction: (chat.direction as string) || 'incoming',
+            direction: direction,
             created: (chat.created as string) || new Date().toISOString(),
+            status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
             byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
           },
           totalMessages: 1
@@ -269,18 +306,31 @@ onMounted(() => {
       if (convId) {
         const idx = conversations.value.findIndex(conv => conv.conversationId === convId);
         if (idx !== -1) {
+          const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+          const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'sent';
+          
+          // Update status in localStorage for persistence
+          updateMessageStatusFromBackend(messageId, status);
+          
           conversations.value[idx].lastMessage = {
             id: (chat.id as number) || Date.now(),
-            messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+            messageId: messageId,
             body: (chat.body as string),
-            direction: (chat.direction as string) || 'outgoing',
+            direction: (chat.direction as string) || 'out',
             created: (chat.created as string) || new Date().toISOString(),
+            status: status,
             byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
           };
           conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
         } else {
           // Tambahkan percakapan baru ke list jika belum ada, pastikan semua properti Conversation terisi
           const customer = response.customer as Record<string, unknown>;
+          const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+          const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'sent';
+          
+          // Update status in localStorage for persistence
+          updateMessageStatusFromBackend(messageId, status);
+          
           conversations.value.unshift({
             conversationId: (convId as number),
             customerId: (customer?.id as number) || 0,
@@ -289,10 +339,11 @@ onMounted(() => {
             primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
             lastMessage: {
               id: (chat.id as number) || Date.now(),
-              messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+              messageId: messageId,
               body: (chat.body as string),
-              direction: (chat.direction as string) || 'outgoing',
+              direction: (chat.direction as string) || 'out',
               created: (chat.created as string) || new Date().toISOString(),
+              status: status,
               byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
             },
             totalMessages: 1
