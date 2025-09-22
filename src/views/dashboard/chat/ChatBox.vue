@@ -600,6 +600,8 @@ function updateFilteredAgents() {
   // Exclude already involved agents
   const involvedIds = new Set((conversation.value?.involvedAgents || []).map(a => a.id));
   let agents = allAgents.value.filter(a => !involvedIds.has(a.id));
+  // Hanya tampilkan agent dengan role 'agent' (case-insensitive)
+  agents = agents.filter(a => a.role && a.role.toLowerCase() === 'agent');
   if (agentSearchQuery.value) {
     agents = agentService.searchAgents(agents, agentSearchQuery.value);
   }
