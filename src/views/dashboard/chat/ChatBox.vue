@@ -397,8 +397,8 @@ async function fetchDetailChat() {
 
     // --- Tambahan: Mark conversation as read (reset unread badge) ---
     // Emit socket event manual jika pakai socket.io
-    if ((window as any)?.socket) {
-      ((window as any).socket.emit) && (window as any).socket.emit('message_read', {
+    if (window.socket?.emit) {
+      window.socket.emit('message_read', {
         conversationId: props.conversationId
       });
     }
@@ -487,8 +487,8 @@ async function sendMessage() {
       
       // KASUS 1 FIX: Update conversation lastMessage tanpa reload
       if (conversation.value) {
-        // Cast to any to avoid strict typing issues from backend DTO shape
-        (conversation.value as any).lastMessage = {
+        // Cast to avoid strict typing issues from backend DTO shape
+        (conversation.value as Record<string, unknown>).lastMessage = {
           id: Date.now(),
           messageId,
           body: message,
@@ -523,26 +523,28 @@ onMounted(() => {
   // Setup message status listeners
   setupStatusListeners();
   
-  onSocket('message_received', (response: any) => {
+  onSocket('message_received', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (
       response &&
       response.chat &&
       (
-        (response.chat.conversationId && response.chat.conversationId === props.conversationId) ||
+        ((response.chat as Record<string, unknown>).conversationId && (response.chat as Record<string, unknown>).conversationId === props.conversationId) ||
         // fallback: match by customer phone if conversationId not available
-        (conversation.value && response.customer && response.customer.phone === conversation.value.customer.phone)
+        (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
       fetchDetailChat();
     }
   });
-  onSocket('message_sent', (response: any) => {
+  onSocket('message_sent', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (
       response &&
       response.chat &&
       (
-        (response.chat.conversationId && response.chat.conversationId === props.conversationId) ||
-        (conversation.value && response.customer && response.customer.phone === conversation.value.customer.phone)
+        ((response.chat as Record<string, unknown>).conversationId && (response.chat as Record<string, unknown>).conversationId === props.conversationId) ||
+        (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
       fetchDetailChat();
@@ -550,22 +552,25 @@ onMounted(() => {
   });
   
   // Listen for message delivery confirmations from WhatsApp webhook
-  onSocket('message_delivered_webhook', (response: any) => {
+  onSocket('message_delivered_webhook', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (response.messageId) {
-      markMessageDelivered(response.messageId);
+      markMessageDelivered(String(response.messageId || ''));
     }
   });
   
   // Listen for message read confirmations from WhatsApp webhook
-  onSocket('message_read_webhook', (response: any) => {
+  onSocket('message_read_webhook', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (response.messageId) {
-      markMessageRead(response.messageId);
+      markMessageRead(String(response.messageId || ''));
     }
   });
 });
 // AGENT SEARCH & ADD UI LOGIC
 
 import { agentService, type Agent } from '../../../services/agent-service';
+
 // Helper: Map involvedAgents to Agent type for modal display
 // (already imported computed above)
 const involvedAgentsForModal = computed<Agent[]>(() => {
@@ -599,9 +604,9 @@ async function fetchAllAgents() {
 function updateFilteredAgents() {
   // Exclude already involved agents
   const involvedIds = new Set((conversation.value?.involvedAgents || []).map(a => a.id));
-  let agents = allAgents.value.filter(a => !involvedIds.has(a.id));
+  let agents = allAgents.value.filter((a: Agent) => !involvedIds.has(a.id));
   // Hanya tampilkan agent dengan role 'agent' (case-insensitive)
-  agents = agents.filter(a => a.role && a.role.toLowerCase() === 'agent');
+  agents = agents.filter((a: Agent) => a.role && a.role.toLowerCase() === 'agent');
   if (agentSearchQuery.value) {
     agents = agentService.searchAgents(agents, agentSearchQuery.value);
   }

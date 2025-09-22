@@ -55,7 +55,7 @@ class WhatsAppService {
         body: JSON.stringify(data)
       };
       
-      const result = await apiFetch('/wa/send', requestOptions);
+      const result = await apiFetch<WhatsAppSendResponse>('/wa/send', requestOptions);
       return result;
     } catch (error) {
       console.error('Error sending WhatsApp message:', error);
@@ -76,7 +76,7 @@ class WhatsAppService {
         }
       };
       
-      const result = await apiFetch(`/wa/get-qr?id=${companyId}`, requestOptions);
+      const result = await apiFetch<QRCodeResponse>(`/wa/get-qr?id=${companyId}`, requestOptions);
       return result;
     } catch (error) {
       console.error('Error getting QR code:', error);
@@ -97,7 +97,7 @@ class WhatsAppService {
         }
       };
       
-      const result = await apiFetch(`/wa/status/${companyId}`, requestOptions);
+      const result = await apiFetch<ConnectionStatusResponse>(`/wa/status/${companyId}`, requestOptions);
       return result;
     } catch (error) {
       console.error('Error getting connection status:', error);
@@ -118,7 +118,7 @@ class WhatsAppService {
         }
       };
       
-      const result = await apiFetch(`/wa/disconnect/${companyId}`, requestOptions);
+      const result = await apiFetch<{ success: boolean; message: string }>(`/wa/disconnect/${companyId}`, requestOptions);
       return result;
     } catch (error) {
       console.error('Error disconnecting WhatsApp:', error);
@@ -129,7 +129,7 @@ class WhatsAppService {
   /**
    * Test WhatsApp service connection
    */
-  async testConnection(): Promise<any> {
+  async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
       const requestOptions: RequestInit = {
         method: 'GET',
@@ -139,7 +139,7 @@ class WhatsAppService {
         }
       };
       
-      const result = await apiFetch('/wa/test', requestOptions);
+      const result = await apiFetch<{ success: boolean; message: string }>('/wa/test', requestOptions);
       return result;
     } catch (error) {
       console.error('Error testing WhatsApp connection:', error);

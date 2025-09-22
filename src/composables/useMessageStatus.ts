@@ -1,6 +1,7 @@
 // src/composables/useMessageStatus.ts
 import { reactive } from 'vue';
-import type { MessageStatus, MessageStatusUpdate, MessageWithStatus } from '../types/message-status';
+import type { MessageStatus, MessageStatusUpdate } from '../types/message-status';
+import type { MessageStatusData } from '../interfaces';
 import { useSocket } from './useSocket';
 
 const { onSocket, emitSocket } = useSocket();
@@ -79,36 +80,41 @@ export function useMessageStatus() {
    */
   const setupStatusListeners = () => {
     // Listen untuk update status dari server/socket
-    onSocket('message_status_update', (data: MessageStatusUpdate) => {
+    onSocket('message_status_update', (...args: unknown[]) => {
+      const data = args[0] as MessageStatusUpdate;
       // console.log('[MessageStatus] Received status update:', data);
       updateMessageStatus(data.messageId, data.status);
     });
 
     // Listen untuk konfirmasi pengiriman
-    onSocket('message_sent_confirmation', (data: any) => {
-      if (data.messageId) {
-        markMessageSent(data.messageId);
+    onSocket('message_sent_confirmation', (...args: unknown[]) => {
+      const data = args[0] as MessageStatusData;
+      if (data.message_id) {
+        markMessageSent(data.message_id);
       }
     });
 
     // Listen untuk konfirmasi delivery
-    onSocket('message_delivered', (data: any) => {
-      if (data.messageId) {
-        markMessageDelivered(data.messageId);
+    onSocket('message_delivered', (...args: unknown[]) => {
+      const data = args[0] as MessageStatusData;
+      if (data.message_id) {
+        markMessageDelivered(data.message_id);
       }
     });
 
     // Listen untuk konfirmasi read
-    onSocket('message_read', (data: any) => {
-      if (data.messageId) {
-        markMessageRead(data.messageId);
+    onSocket('message_read', (...args: unknown[]) => {
+      const data = args[0] as MessageStatusData;
+      if (data.message_id) {
+        markMessageRead(data.message_id);
       }
     });
 
     // Listen untuk failure
-    onSocket('message_failed', (data: any) => {
-      if (data.messageId) {
-        markMessageFailed(data.messageId);
+    onSocket('message_failed', (...args: unknown[]) => {
+      const data = args[0] as MessageStatusData;
+      if (data.message_id) {
+        markMessageFailed(data.message_id);
       }
     });
   };
@@ -116,10 +122,10 @@ export function useMessageStatus() {
   /**
    * Add status property to messages
    */
-  const enrichMessagesWithStatus = (messages: any[]): MessageWithStatus[] => {
+  const enrichMessagesWithStatus = <T extends { id?: string | number; messageId?: string }>(messages: T[]): (T & { status: MessageStatus })[] => {
     return messages.map(msg => ({
       ...msg,
-      status: getMessageStatus(msg.messageId)
+      status: getMessageStatus(msg.messageId || String(msg.id) || '')
     }));
   };
 

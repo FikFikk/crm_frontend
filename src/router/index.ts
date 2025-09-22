@@ -7,6 +7,7 @@ import Chat from '../views/dashboard/chat/Chat.vue'
 import Company from '../views/dashboard/company/Company.vue'
 import Agent from '../views/dashboard/agents/Agent.vue'
 import Whatsapp from '../views/dashboard/whatsapp/Whatsapp.vue'
+import type { UserSession } from '../interfaces'
 
 const routes = [
   {
@@ -80,7 +81,7 @@ const router = createRouter({
 // Navigation guard
 router.beforeEach((to, _from, next) => {
   const userStr = localStorage.getItem('user')
-  let user: any = null
+  let user: UserSession | null = null
 
   if (userStr) {
     try {

@@ -27,11 +27,11 @@
         </div>
         <div class="mt-6 lg:mt-0 flex-1 flex items-center justify-center px-5 border-t lg:border-0 border-slate-200/60 pt-5 lg:pt-0">
           <div class="text-center rounded-md w-20 py-3">
-            <div class="font-medium text-primary text-xl">{{ company.created ? company.created.split(' ')[0] : '-' }}</div>
+            <div class="font-medium text-xl">{{ company.created ? company.created.split(' ')[0] : '-' }}</div>
             <div class="text-slate-500">Created</div>
           </div>
           <div class="text-center rounded-md w-20 py-3">
-            <div class="font-medium text-primary text-xl">{{ company.lastEdited ? company.lastEdited.split(' ')[0] : '-' }}</div>
+            <div class="font-medium text-xl">{{ company.lastEdited ? company.lastEdited.split(' ')[0] : '-' }}</div>
             <div class="text-slate-500">Last Edited</div>
           </div>
         </div>

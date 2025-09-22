@@ -101,8 +101,8 @@ async function handleSetPassword() {
     } else {
       error.value = res.message || 'Failed to update password.'
     }
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to update password.'
+  } catch (e: unknown) {
+    error.value = (e as Error)?.message || 'Failed to update password.'
   } finally {
     loading.value = false
   }

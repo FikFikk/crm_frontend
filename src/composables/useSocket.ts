@@ -10,7 +10,7 @@ const waConnectionStatus = ref<string>('disconnected');
 const COMPANY_ID = '2'; // TODO: Replace with dynamic company ID from auth/session
 
 // Event listeners registry for cleanup
-const listeners: Array<{ event: string; handler: (...args: any[]) => void }> = [];
+const listeners: Array<{ event: string; handler: (...args: unknown[]) => void }> = [];
 
 function connectSocket() {
   if (!socketInstance.value) {
@@ -27,7 +27,7 @@ function connectSocket() {
     socket.on('disconnect', () => {
       waConnectionStatus.value = 'disconnected';
     });
-    socket.on('connection_status', (data) => {
+    socket.on('connection_status', (data: { status: string }) => {
       waConnectionStatus.value = data.status;
     });
     socket.on('connection_error', () => {
@@ -43,7 +43,7 @@ function disconnectSocket() {
   }
 }
 
-function onSocket(event: string, handler: (...args: any[]) => void) {
+function onSocket(event: string, handler: (...args: unknown[]) => void) {
   connectSocket();
   if (socketInstance.value) {
     socketInstance.value.on(event, handler);
@@ -51,13 +51,13 @@ function onSocket(event: string, handler: (...args: any[]) => void) {
   }
 }
 
-function offSocket(event: string, handler: (...args: any[]) => void) {
+function offSocket(event: string, handler: (...args: unknown[]) => void) {
   if (socketInstance.value) {
     socketInstance.value.off(event, handler);
   }
 }
 
-function emitSocket(event: string, ...args: any[]) {
+function emitSocket(event: string, ...args: unknown[]) {
   connectSocket();
   socketInstance.value?.emit(event, ...args);
 }
@@ -78,17 +78,17 @@ function useSocket() {
   // Setup default message status listeners if socket is connected
   if (socketInstance.value) {
     // Listen for message delivery status from WhatsApp webhook
-    socketInstance.value.on('message_delivery_status', (data: any) => {
+    socketInstance.value.on('message_delivery_status', (_data: Record<string, unknown>) => {
       // console.log('[Socket] Message delivery status:', data);
     });
     
     // Listen for message read receipts from WhatsApp webhook  
-    socketInstance.value.on('message_read_receipt', (data: any) => {
+    socketInstance.value.on('message_read_receipt', (_data: Record<string, unknown>) => {
       // console.log('[Socket] Message read receipt:', data);
     });
     
     // Listen for message send confirmations
-    socketInstance.value.on('message_send_confirmation', (data: any) => {
+    socketInstance.value.on('message_send_confirmation', (_data: Record<string, unknown>) => {
       // console.log('[Socket] Message send confirmation:', data);
     });
   }

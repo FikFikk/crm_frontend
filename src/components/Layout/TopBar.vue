@@ -13,7 +13,7 @@
     <!-- END: Breadcrumb -->
     
     <!-- BEGIN: Search -->
-    <div class="intro-x relative mr-3 sm:mr-6">
+    <!-- <div class="intro-x relative mr-3 sm:mr-6">
       <div class="search" style="position: relative; display: block;">
         <input 
           v-model="searchQuery"
@@ -28,7 +28,6 @@
         <i data-feather="search" class="notification__icon dark:text-slate-500"></i> 
       </a>
       
-      <!-- Search Results -->
       <div class="search-result" v-show="showSearchResults">
         <div class="search-result__content">
           <div class="search-result__content__title">Pages</div>
@@ -76,11 +75,11 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- END: Search -->
     
     <!-- BEGIN: Notifications -->
-    <div class="intro-x dropdown sm:mr-6">
+    <!-- <div class="intro-x dropdown sm:mr-6">
       <div class="dropdown-toggle notification notification--bullet cursor-pointer" role="button" aria-expanded="false" data-tw-toggle="dropdown"> 
         <i data-feather="bell" class="notification__icon dark:text-slate-500"></i> 
       </div>
@@ -103,7 +102,7 @@
           </div>
         </div>
       </div>
-    </div>
+    </div> -->
     <!-- END: Notifications -->
     
     <!-- BEGIN: Account Menu -->
@@ -164,7 +163,7 @@ const route = useRoute()
 const router = useRouter()
 
 // Data
-const searchQuery = ref('')
+// const searchQuery = ref('')
 const showSearchResults = ref(false)
 const userDropdown = ref<HTMLElement | null>(null)
 const userDropdownMenu = ref<HTMLElement | null>(null)
@@ -181,97 +180,97 @@ const currentUser = ref<{
 } | null>(null)
 
 // Search data matching template
-const searchUsers = ref([
-  {
-    id: 1,
-    name: 'Kevin Spacey',
-    email: 'kevinspacey@left4code.com',
-    avatar: '/assets/dist/images/profile-2.jpg'
-  },
-  {
-    id: 2,
-    name: 'Al Pacino',
-    email: 'alpacino@left4code.com',
-    avatar: '/assets/dist/images/profile-8.jpg'
-  },
-  {
-    id: 3,
-    name: 'Al Pacino',
-    email: 'alpacino@left4code.com',
-    avatar: '/assets/dist/images/profile-5.jpg'
-  },
-  {
-    id: 4,
-    name: 'Denzel Washington',
-    email: 'denzelwashington@left4code.com',
-    avatar: '/assets/dist/images/profile-11.jpg'
-  }
-])
+// const searchUsers = ref([
+//   {
+//     id: 1,
+//     name: 'Kevin Spacey',
+//     email: 'kevinspacey@left4code.com',
+//     avatar: '/assets/dist/images/profile-2.jpg'
+//   },
+//   {
+//     id: 2,
+//     name: 'Al Pacino',
+//     email: 'alpacino@left4code.com',
+//     avatar: '/assets/dist/images/profile-8.jpg'
+//   },
+//   {
+//     id: 3,
+//     name: 'Al Pacino',
+//     email: 'alpacino@left4code.com',
+//     avatar: '/assets/dist/images/profile-5.jpg'
+//   },
+//   {
+//     id: 4,
+//     name: 'Denzel Washington',
+//     email: 'denzelwashington@left4code.com',
+//     avatar: '/assets/dist/images/profile-11.jpg'
+//   }
+// ])
 
-const searchProducts = ref([
-  {
-    id: 1,
-    name: 'Nike Tanjun',
-    category: 'Sport & Outdoor',
-    image: '/assets/dist/images/preview-11.jpg'
-  },
-  {
-    id: 2,
-    name: 'Oppo Find X2 Pro',
-    category: 'Smartphone & Tablet',
-    image: '/assets/dist/images/preview-15.jpg'
-  },
-  {
-    id: 3,
-    name: 'Dell XPS 13',
-    category: 'PC & Laptop',
-    image: '/assets/dist/images/preview-7.jpg'
-  },
-  {
-    id: 4,
-    name: 'Dell XPS 13',
-    category: 'PC & Laptop',
-    image: '/assets/dist/images/preview-12.jpg'
-  }
-])
+// const searchProducts = ref([
+//   {
+//     id: 1,
+//     name: 'Nike Tanjun',
+//     category: 'Sport & Outdoor',
+//     image: '/assets/dist/images/preview-11.jpg'
+//   },
+//   {
+//     id: 2,
+//     name: 'Oppo Find X2 Pro',
+//     category: 'Smartphone & Tablet',
+//     image: '/assets/dist/images/preview-15.jpg'
+//   },
+//   {
+//     id: 3,
+//     name: 'Dell XPS 13',
+//     category: 'PC & Laptop',
+//     image: '/assets/dist/images/preview-7.jpg'
+//   },
+//   {
+//     id: 4,
+//     name: 'Dell XPS 13',
+//     category: 'PC & Laptop',
+//     image: '/assets/dist/images/preview-12.jpg'
+//   }
+// ])
 
-const notifications = ref([
-  {
-    id: 1,
-    name: 'Kevin Spacey',
-    time: '05:09 AM',
-    message: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 20',
-    avatar: '/assets/dist/images/profile-2.jpg'
-  },
-  {
-    id: 2,
-    name: 'Al Pacino',
-    time: '01:10 PM',
-    message: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500',
-    avatar: '/assets/dist/images/profile-8.jpg'
-  },
-  {
-    id: 3,
-    name: 'Al Pacino',
-    time: '06:05 AM',
-    message: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem',
-    avatar: '/assets/dist/images/profile-5.jpg'
-  },
-  {
-    id: 4,
-    name: 'Denzel Washington',
-    time: '06:05 AM',
-    message: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 20',
-    avatar: '/assets/dist/images/profile-11.jpg'
-  },
-  {
-    id: 5,
-    name: 'Robert De Niro',
-    time: '01:10 PM',
-    message: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500',
-    avatar: '/assets/dist/images/profile-9.jpg'
-  }
-])
+// const notifications = ref([
+//   {
+//     id: 1,
+//     name: 'Kevin Spacey',
+//     time: '05:09 AM',
+//     message: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 20',
+//     avatar: '/assets/dist/images/profile-2.jpg'
+//   },
+//   {
+//     id: 2,
+//     name: 'Al Pacino',
+//     time: '01:10 PM',
+//     message: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500',
+//     avatar: '/assets/dist/images/profile-8.jpg'
+//   },
+//   {
+//     id: 3,
+//     name: 'Al Pacino',
+//     time: '06:05 AM',
+//     message: 'It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem',
+//     avatar: '/assets/dist/images/profile-5.jpg'
+//   },
+//   {
+//     id: 4,
+//     name: 'Denzel Washington',
+//     time: '06:05 AM',
+//     message: 'Contrary to popular belief, Lorem Ipsum is not simply random text. It has roots in a piece of classical Latin literature from 45 BC, making it over 20',
+//     avatar: '/assets/dist/images/profile-11.jpg'
+//   },
+//   {
+//     id: 5,
+//     name: 'Robert De Niro',
+//     time: '01:10 PM',
+//     message: 'Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry\'s standard dummy text ever since the 1500',
+//     avatar: '/assets/dist/images/profile-9.jpg'
+//   }
+// ])
 
 // Computed
 const currentPageTitle = computed(() => {
@@ -310,14 +309,14 @@ const userAvatar = computed(() => {
 })
 
 // Methods
-const onSearch = () => {
-  showSearchResults.value = searchQuery.value.length > 0
-}
+// const onSearch = () => {
+//   showSearchResults.value = searchQuery.value.length > 0
+// }
 
-const toggleMobileSearch = () => {
-  // Toggle mobile search functionality
-  // console.log('Toggle mobile search')
-}
+// const toggleMobileSearch = () => {
+//   // Toggle mobile search functionality
+//   // console.log('Toggle mobile search')
+// }
 
 // Dropdown functionality handled by Midone template JS
 
@@ -397,13 +396,13 @@ onMounted(async () => {
   
   // Initialize Midone dropdowns after component mount
   setTimeout(() => {
-    if (typeof (window as any).feather !== 'undefined') {
-      (window as any).feather.replace()
+    if (typeof window.feather !== 'undefined') {
+      window.feather.replace()
     }
     
     // Initialize dropdown functionality
-    if (typeof window !== 'undefined' && (window as any).app) {
-      (window as any).app.dropdowns?.init()
+    if (typeof window !== 'undefined' && window.app) {
+      window.app.dropdowns?.init()
     }
   }, 100)
 })

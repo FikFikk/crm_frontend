@@ -181,7 +181,7 @@ import { ref, computed, onMounted, watch } from 'vue';
 import DashboardLayout from '../../../components/Layout/DashboardLayout.vue';
 import Pagination from '../../../components/ui/Pagination.vue';
 import { agentService } from '../../../services/agent-service';
-import type { Agent as ApiAgent, CreateAgentRequest } from '../../../interfaces/agent.interface';
+import type { Agent as ApiAgent, CreateAgentRequest, UpdateAgentRequest } from '../../../interfaces/agent.interface';
 import CreateAgentModal from '../../../components/agent/CreateAgentModal.vue';
 import EditAgentModal from '../../../components/agent/EditAgentModal.vue';
 import { useNotification } from '../../../composables/useNotification'
@@ -295,7 +295,7 @@ const openEditModal = (agent: DisplayAgent) => {
     showEditModal.value = true;
 };
 
-const handleEditAgent = async ({ id, data }: { id: number, data: any }) => {
+const handleEditAgent = async ({ id, data }: { id: number, data: UpdateAgentRequest }) => {
     if (isEditing.value) return;
     try {
         isEditing.value = true;

@@ -21,7 +21,7 @@
                       <i data-feather="users" class="report-box__icon text-primary"></i>
                       <div class="ml-auto">
                         <div class="report-box__indicator tooltip cursor-pointer"
-                          :class="dashboardStats?.customer_count?.percent_change < 0 ? 'bg-danger' : 'bg-success'"
+                          :class="(dashboardStats?.customer_count?.percent_change ?? 0) < 0 ? 'bg-danger' : 'bg-success'"
                           :title="dashboardStats?.customer_count?.message ?? ''">
                           {{ dashboardStats?.customer_count?.percent_change ?? '-' }}% 
                           <!-- <i :data-feather="dashboardStats?.customer_count?.percent_change < 0 ? 'chevron-down' : 'chevron-up'" class="w-4 h-4 ml-0.5"></i> -->
@@ -40,7 +40,7 @@
                       <i data-feather="user" class="report-box__icon text-pending"></i>
                       <div class="ml-auto">
                         <div class="report-box__indicator tooltip cursor-pointer"
-                          :class="dashboardStats?.agent_count?.percent_change < 0 ? 'bg-danger' : 'bg-success'"
+                          :class="(dashboardStats?.agent_count?.percent_change ?? 0) < 0 ? 'bg-danger' : 'bg-success'"
                           :title="dashboardStats?.agent_count?.message ?? ''">
                           {{ dashboardStats?.agent_count?.percent_change ?? '-' }}% 
                           <!-- <i :data-feather="dashboardStats?.agent_count?.percent_change < 0 ? 'chevron-down' : 'chevron-up'" class="w-4 h-4 ml-0.5"></i> -->
@@ -59,7 +59,7 @@
                       <i data-feather="message-square" class="report-box__icon text-warning"></i>
                       <div class="ml-auto">
                         <div class="report-box__indicator tooltip cursor-pointer"
-                          :class="dashboardStats?.today_chats?.percent_change < 0 ? 'bg-danger' : 'bg-success'"
+                          :class="(dashboardStats?.today_chats?.percent_change ?? 0) < 0 ? 'bg-danger' : 'bg-success'"
                           :title="dashboardStats?.today_chats?.message ?? ''">
                           {{ dashboardStats?.today_chats?.percent_change ?? '-' }}% 
                           <!-- <i :data-feather="dashboardStats?.today_chats?.percent_change < 0 ? 'chevron-down' : 'chevron-up'" class="w-4 h-4 ml-0.5"></i> -->
@@ -78,7 +78,7 @@
                       <i data-feather="user-check" class="report-box__icon text-success"></i>
                       <div class="ml-auto">
                         <div class="report-box__indicator tooltip cursor-pointer"
-                          :class="dashboardStats?.total_assignments?.percent_change < 0 ? 'bg-danger' : 'bg-success'"
+                          :class="(dashboardStats?.total_assignments?.percent_change ?? 0) < 0 ? 'bg-danger' : 'bg-success'"
                           :title="dashboardStats?.total_assignments?.message ?? ''">
                           {{ dashboardStats?.total_assignments?.percent_change ?? '-' }}% 
                           <!-- <i :data-feather="dashboardStats?.total_assignments?.percent_change < 0 ? 'chevron-down' : 'chevron-up'" class="w-4 h-4 ml-0.5"></i> -->
@@ -280,6 +280,7 @@ import DashboardLayout from '../../components/Layout/DashboardLayout.vue'
 import BarChart from '../../components/ui/BarChart.vue'
 import { utilsService } from '../../services/utils-service';
 import { formatDateIndo } from '../../utils/formatDateIndo';
+import type { DashboardStats, AgentResponseTime } from '../../interfaces/utils.interface';
 
 // Helper to get two initials from customer name, fallback to customer id
 function getAvatarInitials(name?: string, id?: string | number): string {
@@ -296,18 +297,18 @@ function getAvatarInitials(name?: string, id?: string | number): string {
   return '--';
 }
 
-const dashboardStats = ref<any>(null);
+const dashboardStats = ref<DashboardStats | null>(null);
 const responseTimeTitle = ref('-');
 
 // Computed property for chart data
 const chartData = computed(() => {
   const responseData = dashboardStats.value?.agent_response_times || [];
   return {
-    labels: responseData.map((agent: any) => agent.agent_name),
+    labels: responseData.map((agent: AgentResponseTime) => agent.agent_name),
     datasets: [
       {
         label: 'Average Response Time (minutes)',
-        data: responseData.map((agent: any) => agent.average_response_time_minutes),
+        data: responseData.map((agent: AgentResponseTime) => agent.average_response_time_minutes),
         backgroundColor: 'rgba(5, 150, 105, 0.7)', // #059669 with 70% opacity
         borderColor: '#059669', // Tailwind bg-primary
         borderWidth: 1
@@ -321,7 +322,7 @@ async function fetchDashboardStats() {
     const stats = await utilsService.getDashboardStats();
     dashboardStats.value = stats;
     if (stats.agent_response_times && stats.agent_response_times.length > 0) {
-      const avg = stats.agent_response_times.reduce((acc: number, a: any) => acc + a.average_response_time_minutes, 0) / stats.agent_response_times.length;
+      const avg = stats.agent_response_times.reduce((acc: number, a: AgentResponseTime) => acc + a.average_response_time_minutes, 0) / stats.agent_response_times.length;
       responseTimeTitle.value = avg.toFixed(2);
     } else {
       responseTimeTitle.value = '-';

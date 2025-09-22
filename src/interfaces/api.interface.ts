@@ -3,7 +3,7 @@
 /**
  * Standard API response interface
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = Record<string, unknown>> {
     success: boolean;
     message: string;
     data?: T;

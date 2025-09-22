@@ -124,7 +124,7 @@ watch(() => props.show, (newShow) => {
       surname: props.agent.surname || '',
       email: props.agent.email || '',
       phone: props.agent.phone || '',
-      address: (props.agent as any).address || '',
+      address: (props.agent as Agent & { address?: string })?.address || '',
       password: ''
     };
     error.value = null;

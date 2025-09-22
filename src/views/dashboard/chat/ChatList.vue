@@ -206,24 +206,26 @@ watch(() => props.selectedConversationId, (val) => {
 onMounted(() => {
   loadConversations();
   // Listen for real-time updates
-  onSocket('message_received', (response: any) => {
+  onSocket('message_received', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
       // Normalize conversation id to number to avoid type mismatches
-      const rawId = response.chat.conversationId ?? response.chat.conversation_id ?? response.chat.convId;
+      const chat = response.chat as Record<string, unknown>;
+      const rawId = chat.conversationId ?? chat.conversation_id ?? chat.convId;
       const convId = Number(rawId);
       if (Number.isNaN(convId)) return;
 
-      const isIncoming = (response.chat.direction === 'in' || response.chat.direction === 'incoming' || !response.chat.direction);
+      const isIncoming = (chat.direction === 'in' || chat.direction === 'incoming' || !chat.direction);
 
       const idx = conversations.value.findIndex(conv => Number(conv.conversationId) === convId);
       if (idx !== -1) {
         conversations.value[idx].lastMessage = {
-          id: response.chat.id || Date.now(),
-          messageId: response.chat.messageId || `msg_${Date.now()}`,
-          body: response.chat.body,
-          direction: response.chat.direction || 'incoming',
-          created: response.chat.created || new Date().toISOString(),
-          byAgent: response.chat.byAgent
+          id: (chat.id as number) || Date.now(),
+          messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+          body: (chat.body as string),
+          direction: (chat.direction as string) || 'incoming',
+          created: (chat.created as string) || new Date().toISOString(),
+          byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
         };
         conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
 
@@ -234,19 +236,20 @@ onMounted(() => {
         }
       } else {
         // Add new conversation to list; normalize conversationId to number
+        const customer = response.customer as Record<string, unknown>;
         conversations.value.unshift({
           conversationId: convId,
-          customerId: response.customer?.id || 0,
-          customer: response.customer || { id: 0, name: '', phone: '' },
-          involvedAgents: response.involvedAgents || [],
-          primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
+          customerId: (customer?.id as number) || 0,
+          customer: (response.customer as { id: number; name: string; phone: string }) || { id: 0, name: '', phone: '' },
+          involvedAgents: (response.involvedAgents as Array<{ id: number; name: string; email?: string; role: string }>) || [],
+          primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
           lastMessage: {
-            id: response.chat.id || Date.now(),
-            messageId: response.chat.messageId || `msg_${Date.now()}`,
-            body: response.chat.body,
-            direction: response.chat.direction || 'incoming',
-            created: response.chat.created || new Date().toISOString(),
-            byAgent: response.chat.byAgent
+            id: (chat.id as number) || Date.now(),
+            messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+            body: (chat.body as string),
+            direction: (chat.direction as string) || 'incoming',
+            created: (chat.created as string) || new Date().toISOString(),
+            byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
           },
           totalMessages: 1
         });
@@ -258,36 +261,39 @@ onMounted(() => {
       }
     }
   });
-  onSocket('message_sent', (response: any) => {
+  onSocket('message_sent', (...args: unknown[]) => {
+    const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
-      const convId = response.chat.conversationId;
+      const chat = response.chat as Record<string, unknown>;
+      const convId = chat.conversationId;
       if (convId) {
         const idx = conversations.value.findIndex(conv => conv.conversationId === convId);
         if (idx !== -1) {
           conversations.value[idx].lastMessage = {
-            id: response.chat.id || Date.now(),
-            messageId: response.chat.messageId || `msg_${Date.now()}`,
-            body: response.chat.body,
-            direction: response.chat.direction || 'outgoing',
-            created: response.chat.created || new Date().toISOString(),
-            byAgent: response.chat.byAgent
+            id: (chat.id as number) || Date.now(),
+            messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+            body: (chat.body as string),
+            direction: (chat.direction as string) || 'outgoing',
+            created: (chat.created as string) || new Date().toISOString(),
+            byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
           };
           conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
         } else {
           // Tambahkan percakapan baru ke list jika belum ada, pastikan semua properti Conversation terisi
+          const customer = response.customer as Record<string, unknown>;
           conversations.value.unshift({
-            conversationId: convId,
-            customerId: response.customer?.id || 0,
-            customer: response.customer || { id: 0, name: '', phone: '' },
-            involvedAgents: response.involvedAgents || [],
-            primaryAgent: response.primaryAgent || { id: 0, name: '', role: '' },
+            conversationId: (convId as number),
+            customerId: (customer?.id as number) || 0,
+            customer: (response.customer as { id: number; name: string; phone: string }) || { id: 0, name: '', phone: '' },
+            involvedAgents: (response.involvedAgents as Array<{ id: number; name: string; email?: string; role: string }>) || [],
+            primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
             lastMessage: {
-              id: response.chat.id || Date.now(),
-              messageId: response.chat.messageId || `msg_${Date.now()}`,
-              body: response.chat.body,
-              direction: response.chat.direction || 'outgoing',
-              created: response.chat.created || new Date().toISOString(),
-              byAgent: response.chat.byAgent
+              id: (chat.id as number) || Date.now(),
+              messageId: (chat.messageId as string) || `msg_${Date.now()}`,
+              body: (chat.body as string),
+              direction: (chat.direction as string) || 'outgoing',
+              created: (chat.created as string) || new Date().toISOString(),
+              byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
             },
             totalMessages: 1
           });

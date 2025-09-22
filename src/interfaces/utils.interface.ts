@@ -15,6 +15,7 @@ export interface DashboardStats {
   agent_response_times: AgentResponseTime[];
   today_assignments: TodayAssignment[];
   latest_chats: LatestChat[];
+  recent_activities: RecentActivity[];
 }
 
 export interface LatestChat {
@@ -38,4 +39,11 @@ export interface TodayAssignment {
   agent_id: number;
   agent_name: string;
   today_assignment_count: number;
+}
+
+export interface RecentActivity {
+  id: number;
+  title: string;
+  description: string;
+  created: string;
 }

@@ -89,8 +89,8 @@ async function handleResetPassword() {
     } else {
       error.value = res.message || 'Failed to send reset code.'
     }
-  } catch (e: any) {
-    error.value = e?.message || 'Failed to send reset code.'
+  } catch (e: unknown) {
+    error.value = (e as Error)?.message || 'Failed to send reset code.'
   } finally {
     loading.value = false
   }

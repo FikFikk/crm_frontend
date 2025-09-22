@@ -99,7 +99,7 @@ class ChatService {
    * @param customerId - ID customer (conversation)
    * @param agentId - ID agent yang ingin ditambahkan
    */
-  async addAgentToConversation(customerId: number, agentId: number): Promise<any> {
+  async addAgentToConversation(customerId: number, agentId: number): Promise<{ success: boolean; message?: string }> {
     const url = `/chats/${customerId}/add-agent`;
     const requestOptions: RequestInit = {
       method: 'POST',
@@ -110,7 +110,7 @@ class ChatService {
       },
       body: JSON.stringify({ agentId }),
     };
-    return apiFetch(url, requestOptions);
+    return apiFetch<{ success: boolean; message?: string }>(url, requestOptions);
   }
 
   /**
@@ -118,7 +118,7 @@ class ChatService {
    * @param customerId - ID customer (conversation)
    * @param agentId - ID agent yang ingin dihapus
    */
-  async removeAgentFromConversation(customerId: number, agentId: number): Promise<any> {
+  async removeAgentFromConversation(customerId: number, agentId: number): Promise<{ success: boolean; message?: string }> {
     const url = `/chats/${customerId}/remove-agent`;
     const requestOptions: RequestInit = {
       method: 'POST',
@@ -129,7 +129,7 @@ class ChatService {
       },
       body: JSON.stringify({ agentId }),
     };
-    return apiFetch(url, requestOptions);
+    return apiFetch<{ success: boolean; message?: string }>(url, requestOptions);
   }
   async getConversations(params: { agentId?: number; customerId?: number } = {}): Promise<Conversation[]> {
     try {
@@ -147,7 +147,7 @@ class ChatService {
           ...apiHeaders()
         }
       };
-      const result: ConversationListResponse = await apiFetch(url, requestOptions);
+      const result: ConversationListResponse = await apiFetch<ConversationListResponse>(url, requestOptions);
       return result.conversations || [];
     } catch (error) {
       console.error('Error fetching conversations:', error);
@@ -186,7 +186,7 @@ class ChatService {
           ...apiHeaders()
         }
       };
-      const result = await apiFetch(url, requestOptions);
+      const result = await apiFetch<ConversationDetailResponse>(url, requestOptions);
       // console.log('[chatService] Detail chat result:', result);
       return result;
     } catch (error) {
@@ -207,7 +207,7 @@ class ChatService {
         },
         body: JSON.stringify(data)
       };
-      const result = await apiFetch(url, requestOptions);
+      const result = await apiFetch<SendMessageResponse>(url, requestOptions);
       // console.log('[chatService] Send message result:', result);
       return result;
     } catch (error) {

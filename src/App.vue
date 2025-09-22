@@ -5,6 +5,7 @@ import { useRouter } from 'vue-router'
 import NotificationContainer from './components/ui/NotificationContainer.vue'
 import { useSocket } from './composables/useSocket'
 import { useNotification } from './composables/useNotification'
+import type { SocketMessageReceivedEvent } from './interfaces'
 // import '../src/assets/dist/css/app.css' 
 
 const router = useRouter()
@@ -12,7 +13,8 @@ const { onSocket } = useSocket()
 const { showAvatarNotification } = useNotification()
 
 onMounted(() => {
-  onSocket('message_received', (response: any) => {
+  onSocket('message_received', (...args: unknown[]) => {
+    const response = args[0] as SocketMessageReceivedEvent;
     // Hanya tampilkan notifikasi jika bukan di halaman chat
     const isOnChatPage = router.currentRoute.value.path.includes('/chat')
     

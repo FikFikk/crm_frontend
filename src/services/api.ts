@@ -2,7 +2,7 @@
 import { apiHeaders } from "./api-header";
 import { authHeader } from "./auth-header";
 
-async function handleResponse(response: Response): Promise<any> {
+async function handleResponse(response: Response): Promise<unknown> {
     const text = await response.text();
     const data = text ? JSON.parse(text) : null;
 
@@ -18,7 +18,7 @@ async function handleResponse(response: Response): Promise<any> {
     return data;
 }
 
-export async function apiFetch(url: string, options: RequestInit = {}) {
+export async function apiFetch<T = unknown>(url: string, options: RequestInit = {}): Promise<T> {
     const baseUrl = "http://localhost:8080/api";
     options.headers = {
         ...apiHeaders(),
@@ -26,5 +26,5 @@ export async function apiFetch(url: string, options: RequestInit = {}) {
         ...options.headers
     };
     const response = await fetch(`${baseUrl}${url}`, options);
-    return handleResponse(response);
+    return handleResponse(response) as Promise<T>;
 }

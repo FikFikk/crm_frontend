@@ -19,6 +19,39 @@ export interface LoginResponse {
     expires_at: string;
 }
 
+export interface ResetPasswordResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface SetPasswordResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface MeResponse {
+    success: boolean;
+    user: {
+        id: number;
+        email: string;
+        firstName: string;
+        surname: string;
+        role: string;
+        companyId: number | null;
+        companyName: string | null;
+    };
+}
+
+export interface TokensResponse {
+    success: boolean;
+    tokens: Array<{
+        id: string;
+        name: string;
+        created_at: string;
+        last_used_at?: string;
+    }>;
+}
+
 export const authService = {
     login,
     logout,
@@ -28,7 +61,7 @@ export const authService = {
     setPassword,
 };
 // Request password reset: send code to email
-async function resetPassword(email: string): Promise<any> {
+async function resetPassword(email: string): Promise<ResetPasswordResponse> {
     const requestOptions: RequestInit = {
         method: 'POST',
         headers: { 
@@ -36,11 +69,11 @@ async function resetPassword(email: string): Promise<any> {
         },
         body: JSON.stringify({ email })
     };
-    return await apiFetch('/auth/reset-password', requestOptions);
+    return await apiFetch<ResetPasswordResponse>('/auth/reset-password', requestOptions);
 }
 
 // Set new password using reset code
-async function setPassword(params: { email: string; code: string; password: string; password_confirmation: string }): Promise<any> {
+async function setPassword(params: { email: string; code: string; password: string; password_confirmation: string }): Promise<SetPasswordResponse> {
     const requestOptions: RequestInit = {
         method: 'POST',
         headers: { 
@@ -48,7 +81,7 @@ async function setPassword(params: { email: string; code: string; password: stri
         },
         body: JSON.stringify(params)
     };
-    return await apiFetch('/auth/set-password', requestOptions);
+    return await apiFetch<SetPasswordResponse>('/auth/set-password', requestOptions);
 }
 
 async function login(email: string, password: string, deviceName = "Web App"): Promise<LoginResponse> {
@@ -60,7 +93,7 @@ async function login(email: string, password: string, deviceName = "Web App"): P
         body: JSON.stringify({ email, password, device_name: deviceName })
     };
 
-    const result: LoginResponse = await apiFetch('/auth/login', requestOptions);
+    const result: LoginResponse = await apiFetch<LoginResponse>('/auth/login', requestOptions);
 
     if (result && result.access_token) {
         localStorage.setItem('user', JSON.stringify(result));
@@ -82,7 +115,7 @@ async function logout(): Promise<void> {
     localStorage.removeItem('user');
 }
 
-async function me(): Promise<any> {
+async function me(): Promise<MeResponse> {
     const requestOptions: RequestInit = {
         method: 'GET',
         headers: { 
@@ -91,10 +124,10 @@ async function me(): Promise<any> {
         }
     };
 
-    return await apiFetch('/auth/me', requestOptions);
+    return await apiFetch<MeResponse>('/auth/me', requestOptions);
 }
 
-async function tokens(): Promise<any> {
+async function tokens(): Promise<TokensResponse> {
     const requestOptions: RequestInit = {
         method: 'GET',
         headers: { 
@@ -103,5 +136,5 @@ async function tokens(): Promise<any> {
         }
     };
 
-    return await apiFetch('/auth/tokens', requestOptions);
+    return await apiFetch<TokensResponse>('/auth/tokens', requestOptions);
 }
