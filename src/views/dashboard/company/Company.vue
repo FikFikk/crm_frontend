@@ -97,20 +97,20 @@ const form = reactive({
 const { user } = useAuth();
 const { showSuccessNotification } = useNotification();
 
-function debugUser() {
-  console.log('DEBUG user:', user.value);
-  if (user.value) {
-    console.log('DEBUG user.value.user:', user.value.user);
-    console.log('DEBUG companyId:', user.value.user?.companyId);
-  }
-}
+// function debugUser() {
+//   console.log('DEBUG user:', user.value);
+//   if (user.value) {
+//     console.log('DEBUG user.value.user:', user.value.user);
+//     console.log('DEBUG companyId:', user.value.user?.companyId);
+//   }
+// }
 
 async function fetchCompany() {
-  debugUser();
+  // debugUser();
   // Ambil company langsung dari getCompanies (tanpa id, backend sudah filter)
   const companies = await companyService.getCompanies();
   const data: Company = Array.isArray(companies) && companies.length > 0 ? companies[0] : {};
-  console.log('DEBUG company API response:', data);
+  // console.log('DEBUG company API response:', data);
   company.value = data;
   form.name = data.name || '';
   form.code = data.code || '';

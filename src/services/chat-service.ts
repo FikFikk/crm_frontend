@@ -157,7 +157,7 @@ class ChatService {
         error.includes('Cannot filter') && error.includes('empty set') ||
         error.includes('CustomerID') && error.includes('empty set')
       )) {
-        console.log('Agent has no associated conversations');
+        // console.log('Agent has no associated conversations');
         return [];
       }
       
@@ -167,7 +167,7 @@ class ChatService {
         error.message.includes('CustomerID') && error.message.includes('empty set') ||
         error.message.includes('500')
       )) {
-        console.log('No conversations found for this agent');
+        // console.log('No conversations found for this agent');
         return [];
       }
       
@@ -178,7 +178,7 @@ class ChatService {
   async getDetailChat(conversationId: string | number): Promise<ConversationDetailResponse> {
     try {
       const url = `/chats/${conversationId}/detail`;
-      console.log('[chatService] Fetching detail chat:', url);
+      // console.log('[chatService] Fetching detail chat:', url);
       const requestOptions: RequestInit = {
         method: 'GET',
         headers: {
@@ -187,7 +187,7 @@ class ChatService {
         }
       };
       const result = await apiFetch(url, requestOptions);
-      console.log('[chatService] Detail chat result:', result);
+      // console.log('[chatService] Detail chat result:', result);
       return result;
     } catch (error) {
       console.error('Error fetching detail chat:', error);
@@ -198,7 +198,7 @@ class ChatService {
   async sendMessage(data: SendMessageRequest): Promise<SendMessageResponse> {
     try {
       const url = '/chats';
-      console.log('[chatService] Sending message:', data);
+      // console.log('[chatService] Sending message:', data);
       const requestOptions: RequestInit = {
         method: 'POST',
         headers: {
@@ -208,7 +208,7 @@ class ChatService {
         body: JSON.stringify(data)
       };
       const result = await apiFetch(url, requestOptions);
-      console.log('[chatService] Send message result:', result);
+      // console.log('[chatService] Send message result:', result);
       return result;
     } catch (error) {
       console.error('Error sending message:', error);

@@ -246,7 +246,7 @@ const deleteAgentDirect = async (agent: DisplayAgent) => {
         const apiResult = await agentService.deleteAgent(agent.id);
         agents.value = agents.value.filter(a => a.id !== agent.id);
         showSuccessNotification(apiResult?.message || `${agent.name} has been deleted.`);
-        console.log('✅ Agent deleted successfully');
+        // console.log('✅ Agent deleted successfully');
     } catch (err) {
         console.error('❌ Delete error:', err);
         agents.value = agents.value.filter(a => a.id !== agent.id);
@@ -256,7 +256,7 @@ const deleteAgentDirect = async (agent: DisplayAgent) => {
 };
 
 const openCreateModal = () => {
-    console.log('Opening create modal...'); // Debug log
+    // console.log('Opening create modal...'); // Debug log
     showCreateModal.value = true;
 };
 

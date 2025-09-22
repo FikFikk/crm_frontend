@@ -15,7 +15,7 @@ export function useMessageStatus() {
    */
   const updateMessageStatus = (messageId: string, status: MessageStatus) => {
     messageStatusRegistry.set(messageId, status);
-    console.log(`[MessageStatus] Updated ${messageId} to ${status}`);
+    // console.log(`[MessageStatus] Updated ${messageId} to ${status}`);
   };
 
   /**
@@ -80,7 +80,7 @@ export function useMessageStatus() {
   const setupStatusListeners = () => {
     // Listen untuk update status dari server/socket
     onSocket('message_status_update', (data: MessageStatusUpdate) => {
-      console.log('[MessageStatus] Received status update:', data);
+      // console.log('[MessageStatus] Received status update:', data);
       updateMessageStatus(data.messageId, data.status);
     });
 

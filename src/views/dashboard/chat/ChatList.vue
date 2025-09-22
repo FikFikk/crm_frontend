@@ -101,11 +101,11 @@ const loadConversations = async () => {
     
     // Handle specific cases where agent has no chats - don't show as error
     if (errorMessage.includes('Cannot filter') && errorMessage.includes('empty set')) {
-      console.log('Agent has no conversations, showing empty state');
+      // console.log('Agent has no conversations, showing empty state');
       conversations.value = [];
       error.value = null; // Don't show error, just empty state
     } else if (errorMessage.includes('500') && errorMessage.includes('CustomerID')) {
-      console.log('Agent has no conversations (500 error), showing empty state');
+      // console.log('Agent has no conversations (500 error), showing empty state');
       conversations.value = [];
       error.value = null; // Don't show error, just empty state  
     } else {
@@ -186,7 +186,7 @@ import { formatTimeChatList } from '../../../utils/formatTimeChatList';
 // Use formatTimeChatList from utility file
 
 function handleSelect(conversationId: number) {
-  console.log('[ChatList] emit select:', conversationId);
+  // console.log('[ChatList] emit select:', conversationId);
   // KASUS 2: Mark conversation as read ketika diklik
   markConversationAsRead(conversationId);
   emit('select', conversationId);
@@ -230,7 +230,7 @@ onMounted(() => {
         // Increment unread only for incoming messages and only if the conversation isn't selected
         if (isIncoming && Number(props.selectedConversationId) !== convId) {
           incrementUnreadCount(convId);
-          console.log(`[ChatList] Increment unread untuk conversation ${convId}, count: ${getUnreadCount(convId)}`);
+          // console.log(`[ChatList] Increment unread untuk conversation ${convId}, count: ${getUnreadCount(convId)}`);
         }
       } else {
         // Add new conversation to list; normalize conversationId to number

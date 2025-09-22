@@ -316,7 +316,7 @@ const onSearch = () => {
 
 const toggleMobileSearch = () => {
   // Toggle mobile search functionality
-  console.log('Toggle mobile search')
+  // console.log('Toggle mobile search')
 }
 
 // Dropdown functionality handled by Midone template JS

@@ -203,12 +203,12 @@ const handleRegister = async () => {
     await new Promise(resolve => setTimeout(resolve, 1000))
     
     // TODO: Implement actual registration logic here
-    console.log('Registration attempted with:', {
-      firstName: registerForm.firstName,
-      lastName: registerForm.lastName,
-      email: registerForm.email,
-      // Don't log password in production
-    })
+    // console.log('Registration attempted with:', {
+    //   firstName: registerForm.firstName,
+    //   lastName: registerForm.lastName,
+    //   email: registerForm.email,
+    //   // Don't log password in production
+    // })
     
     // Navigate to login after successful registration
     router.push('/login')
@@ -223,7 +223,7 @@ const handleRegister = async () => {
 
 const toggleDarkMode = () => {
   // TODO: Implement dark mode toggle
-  console.log('Dark mode toggle clicked')
+  // console.log('Dark mode toggle clicked')
 }
 </script>
 
