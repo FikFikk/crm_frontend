@@ -7,49 +7,49 @@ import type { DashboardStats, AgentResponseTime, TodayAssignment, LatestChat } f
 
 // Service functions
 export const utilsService = {
-       async getDashboardStats() {
-	       const res = await apiFetch('/utils/dashboard-stats', {
-		       method: 'GET',
-		       headers: {
-			       ...apiHeaders(),
-			       ...authHeader(),
-		       },
-	       });
-	       // Return the full data object, which now includes latest_chats
-	       return res.data as DashboardStats;
-       },
+	async getDashboardStats() {
+		const res = await apiFetch('/utils/dashboard-stats', {
+			method: 'GET',
+			headers: {
+				...apiHeaders(),
+				...authHeader(),
+			},
+		});
+		// Type assertion to fix TS18046
+		return (res as Record<string, unknown>).data as DashboardStats;
+	},
 
-       async getLatestChats(limit = 5) {
-	       const res = await apiFetch(`/utils/latest-chats?limit=${limit}`, {
-		       method: 'GET',
-		       headers: {
-			       ...apiHeaders(),
-			       ...authHeader(),
-		       },
-	       });
-	       return res.latest_chats as LatestChat[];
-       },
+	async getLatestChats(limit = 5) {
+		const res = await apiFetch(`/utils/latest-chats?limit=${limit}`, {
+			method: 'GET',
+			headers: {
+				...apiHeaders(),
+				...authHeader(),
+			},
+		});
+		return (res as Record<string, unknown>).latest_chats as LatestChat[];
+	},
 
 	async getCustomerCount() {
 		const res = await apiFetch('/utils/customer-count', {
 			method: 'GET',
-					headers: {
-						...apiHeaders(),
-						...authHeader(),
-					},
+				headers: {
+					...apiHeaders(),
+					...authHeader(),
+				},
 		});
-		return res.customer_count as number;
+		return (res as Record<string, unknown>).customer_count as number;
 	},
 
 	async getAgentResponseTimes() {
 		const res = await apiFetch('/utils/agent-response-times', {
 			method: 'GET',
-					headers: {
-						...apiHeaders(),
-						...authHeader(),
-					},
+				headers: {
+					...apiHeaders(),
+					...authHeader(),
+				},
 		});
-		return res.agent_response_times as AgentResponseTime[];
+		return (res as Record<string, unknown>).agent_response_times as AgentResponseTime[];
 	},
 
 	async getAgentCount() {
@@ -60,7 +60,7 @@ export const utilsService = {
 				...authHeader(),
 			},
 		});
-		return res.agent_count as number;
+		return (res as Record<string, unknown>).agent_count as number;
 	},
 
 	async getTodayAssignments() {
@@ -71,7 +71,7 @@ export const utilsService = {
 				...authHeader(),
 			},
 		});
-		return res.today_assignments as TodayAssignment[];
+		return (res as Record<string, unknown>).today_assignments as TodayAssignment[];
 	},
 
 	async getTodayChats() {
@@ -82,7 +82,7 @@ export const utilsService = {
 				...authHeader(),
 			},
 		});
-		return res.today_chats as number;
+		return (res as Record<string, unknown>).today_chats as number;
 	},
 
 	async getTotalAssignments() {
@@ -93,6 +93,6 @@ export const utilsService = {
 				...authHeader(),
 			},
 		});
-		return res.total_assignments as number;
+		return (res as Record<string, unknown>).total_assignments as number;
 	},
 };
