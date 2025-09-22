@@ -288,11 +288,8 @@ import { formatTime } from '../../../utils/formatTime';
 
 const { onSocket } = useSocket();
 const { 
-  markMessageSending, 
-  markMessageSent, 
   markMessageDelivered, 
   markMessageRead,
-  markMessageFailed,
   enrichMessagesWithStatus,
   setupStatusListeners,
   updateMessageStatusFromBackend
@@ -398,18 +395,18 @@ async function fetchDetailChat() {
         
         // Update status registry from backend data for persistence
         if (msg.messageId && msg.status) {
-          updateMessageStatusFromBackend(msg.messageId, finalStatus);
+          // updateMessageStatusFromBackend(msg.messageId, finalStatus);
         }
         
         // Debug: Log status resolution for outgoing messages
-        if (msg.direction === 'out') {
-          console.log(`[ChatBox] Message ${msg.messageId}:`, {
-            localStatus: localMsg?.status,
-            backendStatus: msg.status,
-            finalStatus: finalStatus,
-            messageBody: msg.body?.substring(0, 20) + '...'
-          });
-        }
+        // if (msg.direction === 'out') {
+        //   console.log(`[ChatBox] Message ${msg.messageId}:`, {
+        //     localStatus: localMsg?.status,
+        //     backendStatus: msg.status,
+        //     finalStatus: finalStatus,
+        //     messageBody: msg.body?.substring(0, 20) + '...'
+        //   });
+        // }
         
         return {
           ...msg,
@@ -470,13 +467,12 @@ function addEmoji(emoji: string) {
 async function sendMessage() {
   if (messageText.value.trim() && props.conversationId && conversation.value) {
     const message = messageText.value.trim();
-    const messageId = generateMessageId();
     const now = new Date().toISOString();
-    
-    // KASUS 1: Add message to pending (will be shown via computed messages)
+
+    // Tambahkan pesan pending dengan id lokal hanya untuk sementara
     const pendingMsg: PendingMessage = {
       id: Date.now(),
-      messageId,
+      messageId: '', // kosong saat pending, backend akan ganti
       body: message,
       direction: 'out',
       created: now,
@@ -487,103 +483,30 @@ async function sendMessage() {
       },
       status: 'sending'
     };
-    // Only add to pendingMessages, not to conversation.messages directly
-    // This prevents duplication when fetchDetailChat() is called
     pendingMessages.value.push(pendingMsg);
-    markMessageSending(messageId);
-    
-    // Manually update conversation.messages for immediate UI display
     if (conversation.value?.messages) {
       conversation.value.messages.push(pendingMsg);
     }
-    
-    // Clear message input langsung setelah muncul di UI
     messageText.value = '';
-    
-    // Scroll to bottom untuk melihat pesan baru
     scrollToBottom();
-    
+
     try {
       loading.value = true;
-      
-      // Step 1: Mark as sent (centang 1) after a short delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      markMessageSent(messageId);
-      
-      // Update status in both conversation.messages and pendingMessages
-      const updateMessageStatus = (status: 'sending' | 'sent' | 'delivered' | 'read') => {
-        if (conversation.value?.messages) {
-          const messageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
-          if (messageIndex !== -1) {
-            conversation.value.messages[messageIndex].status = status;
-          }
-        }
-        
-        const pendingIndex = pendingMessages.value.findIndex(m => m.messageId === messageId);
-        if (pendingIndex !== -1) {
-          pendingMessages.value[pendingIndex].status = status;
-        }
-      };
-      
-      updateMessageStatus('sent');
-      
-      // Step 2: Send message to backend
+      // Kirim pesan ke backend tanpa messageId lokal, biar backend/WA yang generate
       await chatService.sendMessage({
         conversationId: props.conversationId,
         message: message,
-        messageId: messageId
+        messageId: '' // tetap kirim string kosong agar sesuai interface
       });
-      
-      // Step 3: Mark as delivered (centang 2) after successful backend call
-      await new Promise(resolve => setTimeout(resolve, 300));
-      markMessageDelivered(messageId);
-      updateMessageStatus('delivered');
-      
-      // KASUS 1 FIX: Update conversation lastMessage tanpa reload
-      if (conversation.value) {
-        // Cast to avoid strict typing issues from backend DTO shape
-        (conversation.value as Record<string, unknown>).lastMessage = {
-          id: Date.now(),
-          messageId,
-          body: message,
-          direction: 'outgoing',  
-          created: now,
-          status: 'delivered' // Include status for ChatList
-        };
-      }
-      
-      // Emit the message-sent event for real-time ChatList updates
-      emit('message-sent', {
-        message: message,
-        conversationId: props.conversationId,
-        messageId: messageId,
-        status: 'delivered'
-      });
-      
+      // Tidak perlu update status di sini, tunggu event socket dari backend/WA
     } catch (error) {
       console.error('Error sending message:', error);
-      markMessageFailed(messageId);
-      
       // Update status to failed in UI
-      if (conversation.value?.messages) {
-        const messageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
-        if (messageIndex !== -1) {
-          conversation.value.messages[messageIndex].status = 'sending'; // Keep as sending to show retry
-        }
-      }
-      
-      const pendingIndex = pendingMessages.value.findIndex(m => m.messageId === messageId);
-      if (pendingIndex !== -1) {
-        pendingMessages.value[pendingIndex].status = 'sending'; // Keep as sending to show retry
-      }
+      pendingMsg.status = 'sending'; // Tampilkan retry jika gagal
     } finally {
       loading.value = false;
     }
   }
-}
-
-function generateMessageId(): string {
-  return 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
 }
 
 watch(() => props.conversationId, fetchDetailChat, { immediate: true });
@@ -595,6 +518,8 @@ onMounted(() => {
   
   onSocket('message_received', (...args: unknown[]) => {
     const response = args[0] as Record<string, unknown>;
+
+    // console.log('[ChatBox] message_received event:', response); // Debug log
     if (
       response &&
       response.chat &&
@@ -604,44 +529,39 @@ onMounted(() => {
         (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
-      // Add message directly to conversation for real-time display (same as ChatList)
       if (conversation.value) {
         const chat = response.chat as Record<string, unknown>;
-        const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+        const messageId = chat.messageId as string;
         const direction = (chat.direction as string) || 'in';
-        const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
-        
-        // Check if message already exists to prevent duplicates
-        const existingMessage = conversation.value.messages.find(m => m.messageId === messageId);
-        if (!existingMessage) {
-          const newMessage = {
-            id: (chat.id as number) || Date.now(),
-            messageId: messageId,
-            body: (chat.body as string) || '',
-            direction: direction,
-            status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
-            created: (chat.created as string) || new Date().toISOString(),
-            agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
-          };
-          
-          // Add new message to conversation
-          conversation.value.messages.push(newMessage);
-          
-          // Update status in localStorage for outgoing messages only
-          if (direction === 'out' && messageId && status) {
-            updateMessageStatusFromBackend(messageId, status);
+
+        if (direction === 'in') {
+          // Cek jika pesan sudah ada (berdasarkan messageId backend)
+          const existingMessage = conversation.value.messages.find(m => m.messageId === messageId);
+          if (!existingMessage) {
+            const newMessage = {
+              id: (chat.id as number) || Date.now(),
+              messageId: messageId,
+              body: (chat.body as string) || '',
+              direction: direction,
+              status: undefined, // Incoming messages tidak perlu status
+              created: (chat.created as string) || new Date().toISOString(),
+              agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
+            };
+
+            conversation.value.messages.push(newMessage);
+
+            // Auto scroll to bottom
+            nextTick(() => {
+              scrollToBottom();
+            });
           }
-          
-          // Auto scroll to bottom
-          nextTick(() => {
-            scrollToBottom();
-          });
         }
       }
     }
   });
   onSocket('message_sent', (...args: unknown[]) => {
     const response = args[0] as Record<string, unknown>;
+    console.log('[ChatBox] message_sent event:', response); // Debug log
     if (
       response &&
       response.chat &&
@@ -650,36 +570,56 @@ onMounted(() => {
         (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
-      // Update message status if this is from another agent/user in the same conversation (same as ChatList)
       const chat = response.chat as Record<string, unknown>;
-      const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+      const messageId = chat.messageId as string;
+      const direction = (chat.direction as string) || 'out';
       const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'sent';
       
       if (messageId && conversation.value) {
-        // Update status for existing message in conversation
-        const existingMessageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
-        if (existingMessageIndex !== -1) {
-          conversation.value.messages[existingMessageIndex].status = status;
-          updateMessageStatusFromBackend(messageId, status);
-        } else {
-          // Add new message if not found (sent by another agent)
-          const newMessage = {
-            id: (chat.id as number) || Date.now(),
-            messageId: messageId,
-            body: (chat.body as string) || '',
-            direction: (chat.direction as string) || 'out',
-            status: status,
-            created: (chat.created as string) || new Date().toISOString(),
-            agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
-          };
-          
-          conversation.value.messages.push(newMessage);
-          updateMessageStatusFromBackend(messageId, status);
-          
-          // Auto scroll to bottom
-          nextTick(() => {
-            scrollToBottom();
-          });
+        // HANYA PROSES OUTGOING MESSAGES di event ini
+        if (direction === 'out') {
+          // Hapus pesan pending yang body-nya sama (belum ada id backend)
+          const pendingIdx = pendingMessages.value.findIndex(m => !m.messageId && m.body === (chat.body as string) && m.status === 'sending');
+          if (pendingIdx !== -1) {
+            pendingMessages.value.splice(pendingIdx, 1);
+          }
+          // Hapus dari conversation.messages jika ada pesan pending yang body-nya sama
+          const pendingConvIdx = conversation.value.messages.findIndex(m => !m.messageId && m.body === (chat.body as string) && m.status === 'sending');
+          if (pendingConvIdx !== -1) {
+            conversation.value.messages.splice(pendingConvIdx, 1);
+          }
+
+          // Cek jika pesan sudah ada (berdasarkan messageId backend)
+          const existingMessage = conversation.value.messages.find(m => m.messageId === messageId);
+          if (!existingMessage) {
+            const newMessage = {
+              id: (chat.id as number) || Date.now(),
+              messageId: messageId,
+              body: (chat.body as string) || '',
+              direction: direction,
+              status: status,
+              created: (chat.created as string) || new Date().toISOString(),
+              agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
+            };
+
+            conversation.value.messages.push(newMessage);
+
+            // Update status in localStorage untuk outgoing
+            if (messageId && status) {
+              updateMessageStatusFromBackend(messageId, status);
+            }
+
+            // Auto scroll to bottom
+            nextTick(() => {
+              scrollToBottom();
+            });
+          } else {
+            // Update status jika pesan sudah ada
+            existingMessage.status = status;
+            if (messageId && status) {
+              updateMessageStatusFromBackend(messageId, status);
+            }
+          }
         }
       }
     }
