@@ -32,8 +32,12 @@
                   <div v-else-if="error" class="text-center py-4 text-danger">{{ error }}</div>
                   <template v-else>
                     <div v-for="conv in filteredConversations" :key="conv.conversationId"
-                      class="intro-x cursor-pointer box relative flex items-center p-3 pt-6 pb-6 mb-2"
-                      :class="{ 'ring-2 ring-primary': conv.conversationId === selectedConversationId }"
+                      class="intro-x box relative flex items-center p-3 pt-6 pb-6 mb-2"
+                      :class="{ 
+                        'ring-2 ring-primary': conv.conversationId === selectedConversationId,
+                        'cursor-pointer': !(conv as any).isTemporary,
+                        'cursor-wait opacity-70 bg-slate-50': (conv as any).isTemporary
+                      }"
                       @click="handleSelect(conv.conversationId)">
                       <div class="w-12 h-12 flex-none image-fit mr-1">
                         <img alt="Profile" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
@@ -202,8 +206,39 @@ import { formatTimeChatList } from '../../../utils/formatTimeChatList';
 
 // Use formatTimeChatList from utility file
 
-function handleSelect(conversationId: number) {
-  // console.log('[ChatList] emit select:', conversationId);
+async function handleSelect(conversationId: number) {
+  // Check if this is a temporary conversation
+  const conversation = conversations.value.find(conv => conv.conversationId === conversationId);
+  if (conversation && (conversation as any).isTemporary) {
+    console.log('[ChatList] Temporary conversation clicked (no proper customer.id), need to reload...');
+    
+    // For temporary conversations, we need to reload to get the real conversation
+    // since the payload might not have customer.id
+    try {
+      const tempPhone = conversation.customer.phone;
+      await loadConversations();
+      
+      // Find the real conversation by phone after reload
+      const realConv = conversations.value.find(conv => 
+        conv.customer.phone === tempPhone && !(conv as any).isTemporary
+      );
+      
+      if (realConv) {
+        console.log('[ChatList] Found real conversation after reload:', realConv.conversationId);
+        markConversationAsRead(realConv.conversationId);
+        emit('select', realConv.conversationId);
+        return;
+      } else {
+        console.warn('[ChatList] Real conversation not found after reload');
+        return;
+      }
+    } catch (error) {
+      console.error('[ChatList] Error loading conversations:', error);
+      return;
+    }
+  }
+  
+  console.log('[ChatList] Real conversation selected, no reload needed:', conversationId);
   // KASUS 2: Mark conversation as read ketika diklik
   markConversationAsRead(conversationId);
   emit('select', conversationId);
@@ -229,23 +264,54 @@ onMounted(() => {
     if (response && response.chat && response.customer) {
       // Normalize conversation id to number to avoid type mismatches
       const chat = response.chat as Record<string, unknown>;
-      const rawId = chat.conversationId ?? chat.conversation_id ?? chat.convId;
-      const convId = Number(rawId);
-      if (Number.isNaN(convId)) return;
+      const customer = response.customer as Record<string, unknown>;
+      
+      // First, try to find existing conversation by customer phone
+      const existingConv = conversations.value.find(conv => 
+        conv.customer.phone === customer.phone
+      );
+      
+      let convId: number;
+      if (existingConv) {
+        // Use existing conversation ID
+        convId = existingConv.conversationId;
+      } else {
+        // Prioritize customer.id from payload (now should be available from backend)
+        convId = Number(customer.id || chat.conversationId || chat.conversation_id || chat.convId);
+        
+        // If still no valid ID, this is a new customer - create temporary
+        if (Number.isNaN(convId) || !customer.id) {
+          console.warn('[ChatList] No customer.id in payload, creating temporary conversation');
+          const phoneStr = String(customer.phone || '');
+          convId = Math.abs(phoneStr.split('').reduce((a, b) => {
+            a = ((a << 5) - a) + b.charCodeAt(0);
+            return a & a;
+          }, 0));
+        }
+      }
+      
+      // Determine if this should be temporary - only if we don't have proper customer.id
+      const isTemporaryConversation = !customer.id || Number.isNaN(Number(customer.id));
+      
+      if (Number.isNaN(convId)) {
+        console.warn('[ChatList] Could not determine conversationId from:', { chat, customer });
+        return;
+      }
 
-      const isIncoming = (chat.direction === 'in' || chat.direction === 'incoming' || !chat.direction);
+      // Normalisasi direction
+      let direction = (chat.direction as string) || 'in';
+      if (direction === 'incoming') direction = 'in';
+      if (direction === 'outgoing') direction = 'out';
+      const isIncoming = (direction === 'in');
 
       const idx = conversations.value.findIndex(conv => Number(conv.conversationId) === convId);
       if (idx !== -1) {
+        // ...existing code...
         const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
-        const direction = (chat.direction as string) || 'in';
         const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
-        
-        // Only update status in localStorage for outgoing messages
         if (direction === 'out') {
           updateMessageStatusFromBackend(messageId, status);
         }
-        
         const lastMsg: any = {
           id: (chat.id as number) || Date.now(),
           messageId: messageId,
@@ -254,56 +320,56 @@ onMounted(() => {
           created: (chat.created as string) || new Date().toISOString(),
           byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
         };
-        // Hanya tambahkan status untuk outgoing messages
         if (direction === 'out') {
           lastMsg.status = status;
         }
-        // Debug: log untuk memastikan direction dan status benar
         console.log(`[ChatList] Update message - Direction: ${direction}, Status: ${direction === 'out' ? status : 'none'}, Body: ${(chat.body as string)?.substring(0, 20)}...`);
         conversations.value[idx].lastMessage = lastMsg;
         conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
-
-        // Increment unread only for incoming messages and only if the conversation isn't selected
         if (isIncoming && Number(props.selectedConversationId) !== convId) {
           incrementUnreadCount(convId);
-          // console.log(`[ChatList] Increment unread untuk conversation ${convId}, count: ${getUnreadCount(convId)}`);
         }
       } else {
-        // Add new conversation to list; normalize conversationId to number
+        // Add new conversation to list for new customer
         const customer = response.customer as Record<string, unknown>;
         const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
-        const direction = (chat.direction as string) || 'in';
         const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
-        
-        // Only update status in localStorage for outgoing messages
-        if (direction === 'out') {
-          updateMessageStatusFromBackend(messageId, status);
-        }
-        
-        const lastMsg: any = {
-          id: (chat.id as number) || Date.now(),
-          messageId: messageId,
-          body: (chat.body as string),
-          direction: direction,
-          created: (chat.created as string) || new Date().toISOString(),
-          byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
-        };
-        // Hanya tambahkan status untuk outgoing messages
-        if (direction === 'out') {
-          lastMsg.status = status;
-        }
-        
-        conversations.value.unshift({
-          conversationId: convId,
-          customerId: (customer?.id as number) || 0,
-          customer: (response.customer as { id: number; name: string; phone: string }) || { id: 0, name: '', phone: '' },
-          involvedAgents: (response.involvedAgents as Array<{ id: number; name: string; email?: string; role: string }>) || [],
-          primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
-          lastMessage: lastMsg,
-          totalMessages: 1
-        });
+        // Normalisasi direction
+        let direction = (chat.direction as string) || 'in';
+        if (direction === 'incoming') direction = 'in';
+        if (direction === 'outgoing') direction = 'out';
 
-        // If incoming and not selected, initialize unread count
+        // Tambahkan conversation baru langsung ke atas, tanpa reload
+        const tempConv = {
+          conversationId: convId,
+          customerId: customer.id ? Number(customer.id) : convId, 
+          customer: {
+            id: customer.id ? Number(customer.id) : convId,
+            name: (customer?.name as string) || 'New Customer',
+            phone: (customer?.phone as string) || ''
+          },
+          involvedAgents: [],
+          primaryAgent: { id: 0, name: 'Loading...', role: 'agent' },
+          lastMessage: {
+            id: Date.now(),
+            messageId: messageId,
+            body: (chat.body as string) || '',
+            direction: direction,
+            created: new Date().toISOString(),
+            byAgent: undefined,
+            ...(direction === 'out' ? { status } : {})
+          },
+          totalMessages: 1,
+          isTemporary: isTemporaryConversation // Only temporary if no proper customer.id
+        };
+        
+        console.log(`[ChatList] Add NEW ${isTemporaryConversation ? 'temporary' : 'real'} conversation:`, {
+          convId,
+          customerId: customer.id,
+          isTemporary: isTemporaryConversation
+        });
+        conversations.value.unshift(tempConv);
+        
         if (isIncoming && Number(props.selectedConversationId) !== convId) {
           incrementUnreadCount(convId);
         }
