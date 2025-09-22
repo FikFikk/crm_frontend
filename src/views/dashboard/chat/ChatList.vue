@@ -93,9 +93,9 @@ const loadConversations = async () => {
   error.value = null;
   try {
     conversations.value = (await chatService.getConversations()).map(conv => {
-      // Hapus status jika pesan masuk
+      // Hapus status jika pesan masuk (benar-benar hapus property)
       if (conv.lastMessage?.direction !== 'out') {
-        conv.lastMessage.status = undefined;
+        if ('status' in conv.lastMessage) delete conv.lastMessage.status;
       } else if (conv.lastMessage?.messageId && conv.lastMessage?.status) {
         // Simpan status outgoing ke localStorage
         updateMessageStatusFromBackend(conv.lastMessage.messageId, conv.lastMessage.status as 'sending' | 'sent' | 'delivered' | 'read');
@@ -142,7 +142,7 @@ const updateConversationLastMessage = (conversationId: number, messageText: stri
       id: Date.now(), // Temporary ID
       messageId: messageId || `msg_${Date.now()}`,
       body: messageText,
-      direction: 'out', // Use 'out' to match backend API format
+      direction: 'out', // Use 'out' for outgoing messages
       created: new Date().toISOString(),
       byAgent: undefined, // Since it's sent by user, not by agent
       status: finalStatus // Include status for icon display
@@ -224,6 +224,7 @@ onMounted(() => {
   loadConversations();
   // Listen for real-time updates
   onSocket('message_received', (...args: unknown[]) => {
+    console.log('[ChatList] message_received event', args[0]);
     const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
       // Normalize conversation id to number to avoid type mismatches
@@ -245,15 +246,21 @@ onMounted(() => {
           updateMessageStatusFromBackend(messageId, status);
         }
         
-        conversations.value[idx].lastMessage = {
+        const lastMsg: any = {
           id: (chat.id as number) || Date.now(),
           messageId: messageId,
           body: (chat.body as string),
           direction: direction,
           created: (chat.created as string) || new Date().toISOString(),
-          status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
           byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
         };
+        // Hanya tambahkan status untuk outgoing messages
+        if (direction === 'out') {
+          lastMsg.status = status;
+        }
+        // Debug: log untuk memastikan direction dan status benar
+        console.log(`[ChatList] Update message - Direction: ${direction}, Status: ${direction === 'out' ? status : 'none'}, Body: ${(chat.body as string)?.substring(0, 20)}...`);
+        conversations.value[idx].lastMessage = lastMsg;
         conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
 
         // Increment unread only for incoming messages and only if the conversation isn't selected
@@ -273,21 +280,26 @@ onMounted(() => {
           updateMessageStatusFromBackend(messageId, status);
         }
         
+        const lastMsg: any = {
+          id: (chat.id as number) || Date.now(),
+          messageId: messageId,
+          body: (chat.body as string),
+          direction: direction,
+          created: (chat.created as string) || new Date().toISOString(),
+          byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
+        };
+        // Hanya tambahkan status untuk outgoing messages
+        if (direction === 'out') {
+          lastMsg.status = status;
+        }
+        
         conversations.value.unshift({
           conversationId: convId,
           customerId: (customer?.id as number) || 0,
           customer: (response.customer as { id: number; name: string; phone: string }) || { id: 0, name: '', phone: '' },
           involvedAgents: (response.involvedAgents as Array<{ id: number; name: string; email?: string; role: string }>) || [],
           primaryAgent: (response.primaryAgent as { id: number; name: string; email?: string; role: string }) || { id: 0, name: '', role: '' },
-          lastMessage: {
-            id: (chat.id as number) || Date.now(),
-            messageId: messageId,
-            body: (chat.body as string),
-            direction: direction,
-            created: (chat.created as string) || new Date().toISOString(),
-            status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
-            byAgent: chat.byAgent as { id: number; name: string; email?: string; role: string } | undefined
-          },
+          lastMessage: lastMsg,
           totalMessages: 1
         });
 
@@ -299,6 +311,7 @@ onMounted(() => {
     }
   });
   onSocket('message_sent', (...args: unknown[]) => {
+    console.log('[ChatList] message_sent event', args[0]);
     const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
       const chat = response.chat as Record<string, unknown>;
