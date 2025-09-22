@@ -2,11 +2,26 @@
 /* --------------------------------------------------------------------------
  * Imports
  * -------------------------------------------------------------------------- */
-import { 
-  // ref, 
-  onMounted, 
-  nextTick 
-} from 'vue'
+import { reactive, onMounted, nextTick } from 'vue'
+
+// Ambil currentUser dari localStorage (auth context) sebagai reactive object
+const currentUser = reactive<{ role?: string | null }>({ role: null });
+function loadCurrentUser() {
+  const userStr = localStorage.getItem('user');
+  if (userStr) {
+    try {
+      const userObj = JSON.parse(userStr);
+      currentUser.role = userObj.user?.role || null;
+    } catch {
+      currentUser.role = null;
+    }
+  } else {
+    currentUser.role = null;
+  }
+}
+loadCurrentUser();
+
+// console.log('DEBUG currentUser:', currentUser);
 
 /* --------------------------------------------------------------------------
  * State (data)
@@ -46,41 +61,50 @@ onMounted(() => {
     </a>
     <div class="side-nav__devider my-6"></div>
     
+
     <ul>
-      <li>
-        <router-link to="/dashboard" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Dashboard' }">
-          <div class="side-menu__icon"> <i data-feather="home"></i> </div>
-          <div class="side-menu__title"> Dashboard </div>
-        </router-link>
-      </li>
-
-      <li>
-        <router-link to="/chat" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Chat' }">
-          <div class="side-menu__icon"> <i data-feather="message-square"></i> </div>
-          <div class="side-menu__title"> Chat </div>
-        </router-link>
-      </li>
-
-      <li>
-        <router-link to="/agents" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Agents' }">
-          <div class="side-menu__icon"> <i data-feather="users"></i> </div>
-          <div class="side-menu__title"> Agent </div>
-        </router-link>
-      </li>
-
-      <li>
-        <router-link to="/company" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Company' }">
-          <div class="side-menu__icon"> <i data-feather="code"></i> </div>
-          <div class="side-menu__title"> Company  </div>
-        </router-link>
-      </li>
-
-      <li>
-        <router-link to="/whatsapp" class="side-menu" :class="{ 'side-menu--active': $route.name === 'WhatsApp' }">
-          <div class="side-menu__icon"> <i data-feather="target"></i> </div>
-          <div class="side-menu__title"> WhatsApp  </div>
-        </router-link>
-      </li>
+      <!-- Jika anggota, hanya tampilkan menu Chat -->
+      <template v-if="currentUser.role && currentUser.role.toLowerCase() === 'agent'">
+        <li>
+          <router-link to="/chat" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Chat' }">
+            <div class="side-menu__icon"> <i data-feather="message-square"></i> </div>
+            <div class="side-menu__title"> Chat </div>
+          </router-link>
+        </li>
+      </template>
+      <!-- Jika bukan anggota, tampilkan semua menu -->
+      <template v-else>
+        <li>
+          <router-link to="/dashboard" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Dashboard' }">
+            <div class="side-menu__icon"> <i data-feather="home"></i> </div>
+            <div class="side-menu__title"> Dashboard </div>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/chat" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Chat' }">
+            <div class="side-menu__icon"> <i data-feather="message-square"></i> </div>
+            <div class="side-menu__title"> Chat </div>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/agents" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Agents' }">
+            <div class="side-menu__icon"> <i data-feather="users"></i> </div>
+            <div class="side-menu__title"> Agent </div>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/company" class="side-menu" :class="{ 'side-menu--active': $route.name === 'Company' }">
+            <div class="side-menu__icon"> <i data-feather="code"></i> </div>
+            <div class="side-menu__title"> Company  </div>
+          </router-link>
+        </li>
+        <li>
+          <router-link to="/whatsapp" class="side-menu" :class="{ 'side-menu--active': $route.name === 'WhatsApp' }">
+            <div class="side-menu__icon"> <i data-feather="target"></i> </div>
+            <div class="side-menu__title"> WhatsApp  </div>
+          </router-link>
+        </li>
+      </template>
 
       <!-- <li>
         <router-link to="/leads" class="side-menu">
