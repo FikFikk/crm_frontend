@@ -120,9 +120,9 @@
                 <!-- <button class="btn box flex items-center text-slate-600 dark:text-slate-300">
                   <i data-feather="file-text" class="hidden sm:block w-4 h-4 mr-2"></i> Export to Excel
                 </button> -->
-                <button class="ml-3 btn box flex items-center text-slate-600 dark:text-slate-300">
+                <!-- <button class="ml-3 btn box flex items-center text-slate-600 dark:text-slate-300">
                   <i data-feather="file-text" class="hidden sm:block w-4 h-4 mr-2"></i> Export to PDF
-                </button>
+                </button> -->
               </div>
             </div>
             <div class="intro-y overflow-auto lg:overflow-visible mt-8 sm:mt-0">
@@ -301,36 +301,19 @@ const responseTimeTitle = ref('-');
 
 // Computed property for chart data
 const chartData = computed(() => {
-  if (!dashboardStats.value?.agent_response_times || dashboardStats.value.agent_response_times.length === 0) {
-    // Fallback data for testing
-    return {
-      labels: ['Agent Demo 1', 'Agent Demo 2', 'Agent Demo 3'],
-      datasets: [
-        {
-          label: 'Average Response Time (minutes)',
-          data: [2.5, 3.2, 1.8],
-          backgroundColor: 'rgba(59, 130, 246, 0.6)',
-          borderColor: 'rgba(59, 130, 246, 1)',
-          borderWidth: 1
-        }
-      ]
-    }
-  }
-
-  const responseData = dashboardStats.value.agent_response_times;
-  
+  const responseData = dashboardStats.value?.agent_response_times || [];
   return {
     labels: responseData.map((agent: any) => agent.agent_name),
     datasets: [
       {
         label: 'Average Response Time (minutes)',
         data: responseData.map((agent: any) => agent.average_response_time_minutes),
-        backgroundColor: 'rgba(59, 130, 246, 0.6)',
-        borderColor: 'rgba(59, 130, 246, 1)',
+        backgroundColor: 'rgba(5, 150, 105, 0.7)', // #059669 with 70% opacity
+        borderColor: '#059669', // Tailwind bg-primary
         borderWidth: 1
       }
     ]
-  }
+  };
 });
 
 async function fetchDashboardStats() {
