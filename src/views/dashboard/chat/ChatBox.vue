@@ -604,7 +604,40 @@ onMounted(() => {
         (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
-      fetchDetailChat();
+      // Add message directly to conversation for real-time display (same as ChatList)
+      if (conversation.value) {
+        const chat = response.chat as Record<string, unknown>;
+        const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+        const direction = (chat.direction as string) || 'in';
+        const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'delivered';
+        
+        // Check if message already exists to prevent duplicates
+        const existingMessage = conversation.value.messages.find(m => m.messageId === messageId);
+        if (!existingMessage) {
+          const newMessage = {
+            id: (chat.id as number) || Date.now(),
+            messageId: messageId,
+            body: (chat.body as string) || '',
+            direction: direction,
+            status: direction === 'out' ? status : undefined, // Only set status for outgoing messages
+            created: (chat.created as string) || new Date().toISOString(),
+            agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
+          };
+          
+          // Add new message to conversation
+          conversation.value.messages.push(newMessage);
+          
+          // Update status in localStorage for outgoing messages only
+          if (direction === 'out' && messageId && status) {
+            updateMessageStatusFromBackend(messageId, status);
+          }
+          
+          // Auto scroll to bottom
+          nextTick(() => {
+            scrollToBottom();
+          });
+        }
+      }
     }
   });
   onSocket('message_sent', (...args: unknown[]) => {
@@ -617,9 +650,38 @@ onMounted(() => {
         (conversation.value && response.customer && ((response.customer as Record<string, unknown>).phone === conversation.value.customer.phone))
       )
     ) {
-      // Don't fetchDetailChat() here to prevent duplicate messages when we send our own messages
-      // The message is already added locally in sendMessage() function
-      console.log('Message sent event received for conversation:', props.conversationId);
+      // Update message status if this is from another agent/user in the same conversation (same as ChatList)
+      const chat = response.chat as Record<string, unknown>;
+      const messageId = (chat.messageId as string) || `msg_${Date.now()}`;
+      const status = (chat.status as 'sending' | 'sent' | 'delivered' | 'read') || 'sent';
+      
+      if (messageId && conversation.value) {
+        // Update status for existing message in conversation
+        const existingMessageIndex = conversation.value.messages.findIndex(m => m.messageId === messageId);
+        if (existingMessageIndex !== -1) {
+          conversation.value.messages[existingMessageIndex].status = status;
+          updateMessageStatusFromBackend(messageId, status);
+        } else {
+          // Add new message if not found (sent by another agent)
+          const newMessage = {
+            id: (chat.id as number) || Date.now(),
+            messageId: messageId,
+            body: (chat.body as string) || '',
+            direction: (chat.direction as string) || 'out',
+            status: status,
+            created: (chat.created as string) || new Date().toISOString(),
+            agent: chat.agent as { id: number; name: string; email: string; role: string } | undefined
+          };
+          
+          conversation.value.messages.push(newMessage);
+          updateMessageStatusFromBackend(messageId, status);
+          
+          // Auto scroll to bottom
+          nextTick(() => {
+            scrollToBottom();
+          });
+        }
+      }
     }
   });
   
