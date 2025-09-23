@@ -4,7 +4,7 @@
     <div class="w-10 h-10 flex-none image-fit rounded-full overflow-hidden">
       <img 
         :alt="customerName || 'Customer Avatar'" 
-        :src="avatarUrl || '/assets/images/profile-2.jpg'"
+        :src="avatarUrl || defaultAvatar"
         class="w-full h-full object-cover"
       >
     </div>
@@ -24,6 +24,7 @@
 
 <script setup lang="ts">
 import { defineProps, withDefaults, defineEmits } from 'vue'
+import defaultAvatar from '../../assets/images/profile-2.jpg'
 
 interface Props {
   customerName?: string
@@ -36,7 +37,7 @@ interface Props {
 withDefaults(defineProps<Props>(), {
   customerName: 'Customer',
   message: 'New message received',
-  avatarUrl: '/assets/images/profile-2.jpg',
+  avatarUrl: defaultAvatar,
   show: true,
   showReplyButton: true
 })

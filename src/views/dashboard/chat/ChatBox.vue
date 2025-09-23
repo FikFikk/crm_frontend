@@ -9,7 +9,7 @@
                 <div class="flex flex-row items-center border-b border-slate-200/60 dark:border-darkmode-400 px-5 py-4">
                   <div class="flex items-center flex-1 min-w-0">
                     <div class="w-10 h-10 sm:w-12 sm:h-12 flex-none image-fit relative">
-                        <img alt="Tinker Tailwind HTML Admin Template" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
+                        <img alt="Tinker Tailwind HTML Admin Template" class="rounded-full" :src="profileImage">
                     </div>
                     <div class="ml-3 mr-auto">
                         <div class="font-medium text-base">{{ conversation?.customer?.name }}</div>
@@ -106,7 +106,7 @@
                     <!-- Messages for this date -->
                     <div v-for="msg in group.messages" :key="msg.id" class="mb-4 flex" :class="msg.direction === 'in' ? 'justify-start' : 'justify-end'">
                       <div v-if="msg.direction === 'in'" class="w-10 h-10 flex-none image-fit relative mr-3">
-                          <img alt="Profile" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
+                          <img alt="Profile" class="rounded-full" :src="profileImage">
                       </div>
                       <div :class="msg.direction === 'in' ? 'bg-slate-100 dark:bg-darkmode-400' : 'bg-primary text-white'" class="px-4 py-3 rounded-md relative max-w-md">
                         <!-- Media content -->
@@ -207,7 +207,7 @@
                         </div>
                       </div>
                       <div v-if="msg.direction === 'out'" class="w-10 h-10 flex-none image-fit relative ml-3">
-                          <img alt="Profile" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
+                          <img alt="Profile" class="rounded-full" :src="profileImage">
                       </div>
                     </div>
                   </template>
@@ -285,6 +285,7 @@ import { useSocket } from '../../../composables/useSocket';
 import { useMessageStatus } from '../../../composables/useMessageStatus';
 import { groupMessagesByDate } from '../../../utils/groupMessagesByDate';
 import { formatTime } from '../../../utils/formatTime';
+import profileImage from '../../../assets/images/profile-7.jpg';
 
 const { onSocket } = useSocket();
 const { 
