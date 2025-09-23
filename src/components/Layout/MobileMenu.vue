@@ -2,7 +2,7 @@
   <div class="mobile-menu md:hidden">
     <div class="mobile-menu-bar">
       <a href="" class="flex mr-auto">
-        <img alt="Tinker Tailwind HTML Admin Template" class="w-6" src="/assets/dist/images/logo.svg">
+        <img alt="Tinker Tailwind HTML Admin Template" class="w-6" :src="logoImage">
       </a>
       <a href="javascript:;" @click="toggleMobileMenu"> 
         <i data-feather="bar-chart-2" class="w-8 h-8 text-white transform -rotate-90"></i> 
@@ -112,6 +112,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { useRoute } from 'vue-router'
+import logoImage from '../../assets/images/logo.svg'
 
 const route = useRoute()
 const mobileMenuOpen = ref(false)

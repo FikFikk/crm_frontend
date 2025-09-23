@@ -158,6 +158,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { authService } from '../../services/auth-service'
+import defaultAvatar from '../../assets/images/profile-5.jpg'
 
 const route = useRoute()
 const router = useRouter()
@@ -305,7 +306,7 @@ const userRole = computed(() => {
 
 const userAvatar = computed(() => {
   // Default to template avatar
-  return '/assets/dist/images/profile-5.jpg'
+  return defaultAvatar
 })
 
 // Methods

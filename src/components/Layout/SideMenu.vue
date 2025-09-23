@@ -3,6 +3,7 @@
  * Imports
  * -------------------------------------------------------------------------- */
 import { reactive, onMounted, nextTick } from 'vue'
+import logoImage from '../../assets/images/logo.svg'
 
 // Ambil currentUser dari localStorage (auth context) sebagai reactive object
 const currentUser = reactive<{ role?: string | null }>({ role: null });
@@ -56,7 +57,7 @@ onMounted(() => {
 <template>
   <nav class="side-nav">
     <a href="" class="intro-x flex items-center pl-5 pt-4 mt-3">
-      <img alt="Mini CRM Logo" class="w-6" src="/assets/dist/images/logo.svg">
+      <img alt="Mini CRM Logo" class="w-6" :src="logoImage">
       <span class="text-white text-lg ml-3" style="display: block !important;"> Mini - CRM </span> 
     </a>
     <div class="side-nav__devider my-6"></div>

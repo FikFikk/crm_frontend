@@ -6,11 +6,11 @@
         <!-- BEGIN: Login Info -->
         <div class="hidden xl:flex flex-col min-h-screen">
           <a href="" class="-intro-x flex items-center pt-5">
-            <img alt="Tinker Tailwind HTML Admin Template" class="w-6" src="/assets/images/logo.svg">
+            <img alt="Tinker Tailwind HTML Admin Template" class="w-6" :src="logoImage">
             <span class="text-white text-lg ml-3"> Mini - CRM </span> 
           </a>
           <div class="my-auto">
-            <img alt="Tinker Tailwind HTML Admin Template" class="-intro-x w-1/2 -mt-16" src="/assets/images/illustration.svg">
+            <img alt="Tinker Tailwind HTML Admin Template" class="-intro-x w-1/2 -mt-16" :src="illustrationImage">
             <div class="-intro-x text-white font-medium text-4xl leading-tight mt-10">
               A few more clicks to 
               <br>
@@ -62,6 +62,8 @@ import { ref } from 'vue'
 import { authService } from '../../services/auth-service'
 import { useRouter } from 'vue-router'
 import { useNotification } from '../../composables/useNotification'
+import logoImage from '../../assets/images/logo.svg'
+import illustrationImage from '../../assets/images/illustration.svg'
 
 const email = ref('')
 const code = ref('')
