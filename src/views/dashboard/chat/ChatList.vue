@@ -40,7 +40,7 @@
                       }"
                       @click="handleSelect(conv.conversationId)">
                       <div class="w-12 h-12 flex-none image-fit mr-1">
-                        <img alt="Profile" class="rounded-full" src="/assets/dist/images/profile-7.jpg">
+                        <img alt="Profile" class="rounded-full" :src="profileImage">
                         <div class="w-3 h-3 bg-success absolute right-0 bottom-0 rounded-full border-2 border-white dark:border-darkmode-600"></div>
                       </div>
                       <div class="ml-2 overflow-hidden flex-1">
@@ -77,6 +77,7 @@ import { chatService, type Conversation } from '../../../services/chat-service';
 import { useSocket } from '../../../composables/useSocket';
 import { useMessageStatus } from '../../../composables/useMessageStatus';
 import MessageStatusIcon from '../../../components/ui/MessageStatusIcon.vue';
+import profileImage from '../../../assets/images/profile-7.jpg';
 
 const { onSocket } = useSocket();
 const { getMessageStatus, updateMessageStatusFromBackend } = useMessageStatus();
