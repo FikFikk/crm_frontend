@@ -12,9 +12,11 @@ const COMPANY_ID = '2'; // TODO: Replace with dynamic company ID from auth/sessi
 // Event listeners registry for cleanup
 const listeners: Array<{ event: string; handler: (...args: unknown[]) => void }> = [];
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+
 function connectSocket() {
   if (!socketInstance.value) {
-    const socket = io('http://localhost:3001', {
+    const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
       timeout: 20000,
       forceNew: true
