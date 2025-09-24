@@ -7,12 +7,26 @@ import { io, type Socket } from 'socket.io-client';
 
 const socketInstance = ref<Socket | null>(null);
 const waConnectionStatus = ref<string>('disconnected');
-const COMPANY_ID = '2'; // TODO: Replace with dynamic company ID from auth/session
 
 // Event listeners registry for cleanup
 const listeners: Array<{ event: string; handler: (...args: unknown[]) => void }> = [];
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+
+// Get company ID from current user
+function getCurrentUserCompanyId(): string {
+  try {
+    const userStr = localStorage.getItem('user');
+    if (userStr) {
+      const userObj = JSON.parse(userStr);
+      const companyId = userObj.user?.companyId || userObj.user?.company_id;
+      return String(companyId || '1'); // fallback to '1' if no companyId
+    }
+  } catch (error) {
+    console.warn('[Socket] Failed to get user company ID:', error);
+  }
+  return '1'; // default fallback
+}
 
 function connectSocket() {
   if (!socketInstance.value) {
@@ -30,7 +44,9 @@ function connectSocket() {
     socketInstance.value = socket;
 
     socket.on('connect', () => {
-      socket.emit('join_company', COMPANY_ID);
+      const companyId = getCurrentUserCompanyId();
+      console.log('[Socket] Joining company:', companyId);
+      socket.emit('join_company', companyId);
     });
     socket.on('disconnect', () => {
       waConnectionStatus.value = 'disconnected';
