@@ -562,7 +562,7 @@ onMounted(() => {
   });
   onSocket('message_sent', (...args: unknown[]) => {
     const response = args[0] as Record<string, unknown>;
-    console.log('[ChatBox] message_sent event:', response); // Debug log
+    // console.log('[ChatBox] message_sent event:', response); // Debug log
     if (
       response &&
       response.chat &&

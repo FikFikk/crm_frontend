@@ -48,7 +48,7 @@ export function useMessageStatus() {
   const updateMessageStatusFromBackend = (messageId: string, status: MessageStatus) => {
     messageStatusRegistry.set(messageId, status);
     saveStatusToStorage(messageStatusRegistry); // Persist to localStorage
-    console.log(`[MessageStatus] Backend update ${messageId} to ${status}`);
+    // console.log(`[MessageStatus] Backend update ${messageId} to ${status}`);
   };
 
   /**

@@ -16,10 +16,16 @@ const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 function connectSocket() {
   if (!socketInstance.value) {
+    // console.log('[Socket] Connecting to:', SOCKET_URL);
     const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
+      // transports: ['polling', 'websocket'],
+      transports: ['polling'], // Polling only untuk stabilitas production
       timeout: 20000,
-      forceNew: true
+      forceNew: true,
+      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000
     });
     socketInstance.value = socket;
 

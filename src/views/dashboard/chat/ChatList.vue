@@ -211,7 +211,7 @@ async function handleSelect(conversationId: number) {
   // Check if this is a temporary conversation
   const conversation = conversations.value.find(conv => conv.conversationId === conversationId);
   if (conversation && (conversation as any).isTemporary) {
-    console.log('[ChatList] Temporary conversation clicked (no proper customer.id), need to reload...');
+    // console.log('[ChatList] Temporary conversation clicked (no proper customer.id), need to reload...');
     
     // For temporary conversations, we need to reload to get the real conversation
     // since the payload might not have customer.id
@@ -225,7 +225,7 @@ async function handleSelect(conversationId: number) {
       );
       
       if (realConv) {
-        console.log('[ChatList] Found real conversation after reload:', realConv.conversationId);
+        // console.log('[ChatList] Found real conversation after reload:', realConv.conversationId);
         markConversationAsRead(realConv.conversationId);
         emit('select', realConv.conversationId);
         return;
@@ -239,7 +239,7 @@ async function handleSelect(conversationId: number) {
     }
   }
   
-  console.log('[ChatList] Real conversation selected, no reload needed:', conversationId);
+  // console.log('[ChatList] Real conversation selected, no reload needed:', conversationId);
   // KASUS 2: Mark conversation as read ketika diklik
   markConversationAsRead(conversationId);
   emit('select', conversationId);
@@ -260,7 +260,7 @@ onMounted(() => {
   loadConversations();
   // Listen for real-time updates
   onSocket('message_received', (...args: unknown[]) => {
-    console.log('[ChatList] message_received event', args[0]);
+    // console.log('[ChatList] message_received event', args[0]);
     const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
       // Normalize conversation id to number to avoid type mismatches
@@ -324,7 +324,7 @@ onMounted(() => {
         if (direction === 'out') {
           lastMsg.status = status;
         }
-        console.log(`[ChatList] Update message - Direction: ${direction}, Status: ${direction === 'out' ? status : 'none'}, Body: ${(chat.body as string)?.substring(0, 20)}...`);
+        // console.log(`[ChatList] Update message - Direction: ${direction}, Status: ${direction === 'out' ? status : 'none'}, Body: ${(chat.body as string)?.substring(0, 20)}...`);
         conversations.value[idx].lastMessage = lastMsg;
         conversations.value[idx].totalMessages = (conversations.value[idx].totalMessages || 0) + 1;
         if (isIncoming && Number(props.selectedConversationId) !== convId) {
@@ -364,11 +364,11 @@ onMounted(() => {
           isTemporary: isTemporaryConversation // Only temporary if no proper customer.id
         };
         
-        console.log(`[ChatList] Add NEW ${isTemporaryConversation ? 'temporary' : 'real'} conversation:`, {
-          convId,
-          customerId: customer.id,
-          isTemporary: isTemporaryConversation
-        });
+        // console.log(`[ChatList] Add NEW ${isTemporaryConversation ? 'temporary' : 'real'} conversation:`, {
+        //   convId,
+        //   customerId: customer.id,
+        //   isTemporary: isTemporaryConversation
+        // });
         conversations.value.unshift(tempConv);
         
         if (isIncoming && Number(props.selectedConversationId) !== convId) {
@@ -378,7 +378,7 @@ onMounted(() => {
     }
   });
   onSocket('message_sent', (...args: unknown[]) => {
-    console.log('[ChatList] message_sent event', args[0]);
+    // console.log('[ChatList] message_sent event', args[0]);
     const response = args[0] as Record<string, unknown>;
     if (response && response.chat && response.customer) {
       const chat = response.chat as Record<string, unknown>;
