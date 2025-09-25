@@ -79,7 +79,9 @@ const handleLogin = async () => {
   loading.value = true
   
   try {
-    const result = await authService.login(form.email, form.password, 'Vue App')
+  // userAgent sebagai device name agar unik per device
+  const deviceName = navigator.userAgent
+  const result = await authService.login(form.email, form.password, deviceName)
 
     // simpan user ke localStorage (sudah disimpan di service juga, tapi jaga-jaga)
     localStorage.setItem('user', JSON.stringify(result))
